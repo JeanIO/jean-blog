@@ -1,0 +1,28 @@
+{
+  "private": true,
+  "author": "",
+  "scripts": {
+    "dev": "umi dev",
+    "build": "umi build",
+    "postinstall": "umi setup",
+    "setup": "umi setup",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.6.1",
+    "@reduxjs/toolkit": "^2.11.2",
+    "@tailwindcss/cli": "^4.1.17",
+    "antd": "^4.24.13",
+    "axios": "^1.13.2",
+    "cos-js-sdk-v5": "^1.10.1",
+    "react-redux": "^9.2.0",
+    "react-textarea-autosize": "^8.5.9",
+    "tailwindcss": "^4.1.17",
+    "umi": "^4.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.33",
+    "@types/react-dom": "^18.0.11",
+    "typescript": "^5.0.3"
+  }
+}

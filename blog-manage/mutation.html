@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <button id="toggle">Toggle direction</button><br />
+  <button id="merge">Merge click</button>
+  <button id="addNode">ADD Nodes</button>
+  <div id="container">
+    <input type="text" id="rhubarb" dir="ltr" value="Tofu" />
+  </div>
+  <pre id="output"></pre>
+  <script>
+    const toggle = document.querySelector("#toggle");
+    const rhubarb = document.querySelector("#rhubarb");
+    const observerTarget = document.querySelector("#container");
+    const merge = document.querySelector("#merge")
+    const output = document.querySelector("#output");
+    const addNode = document.querySelector("#addNode");
+    const div = document.createElement("div")
+    addNode.addEventListener("click", () => {
+      const newDIV = document.createElement('div')
+      newDIV.innerHTML = "balabala"
+      observerTarget.appendChild(newDIV)
+      div.appendChild(newDIV)
+    })
+    toggle.addEventListener("click", () => {
+      rhubarb.dir = rhubarb.dir === "ltr" ? "rtl" : "ltr";
+    });
+
+    merge.addEventListener("click", function() {
+      toggle.click()
+      addNode.click()
+    })
+
+    const config = {
+      childList: true,        // 监听子节点增删
+      attributes: true,       // 监听属性变化
+  characterData: true,    // 监听文本变化
+  subtree: true,          // 是否监听后代节点（递归）
+  attributeOldValue: true, // 记录旧属性值
+  characterDataOldValue: true // 记录旧文本值
+    };
+    let index = 0;
+    const callback = (mutationList) => {
+      index++
+      for (const mutation of mutationList) {
+        console.log(index, mutation)
+        if (mutation.type === "attributes") {
+          output.textContent = `The ${mutation.attributeName} attribute was modified from "${mutation.oldValue}".`;
+        }
+        
+      }
+    };
+
+    const observer = new MutationObserver(callback);
+    observer.observe(div, config);
+
+
+
+    const runAsync = (fun) => {
+    if(MutationObserver) {
+    let div = document.createElement("div")
+    const mutation = new MutationObserver((list) => {
+      fun()
+      div = null
+      mutation.disconnect()
+    })
+    mutation.observe(div, { attributes: true })
+    div.dir = "balabala"
+  } else {
+    setTimeout(() => {
+      fun()
+    }, 0)
+  }
+}
+runAsync(() => {
+  console.log("eee")
+})
+console.log("1111")
+
+  </script>
+</body>
+
+</html>
