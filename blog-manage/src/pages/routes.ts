@@ -14,7 +14,8 @@ const routes = [
       // { path:"/:id", }
     ],
     noMenu: true,
-    layout: false },
+    layout: false
+  },
   { path: "/*", redirect: '/dashboard' },
 ]
 export default routes

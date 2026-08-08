@@ -12,9 +12,27 @@
 }
 .rich-text-spinning .ant-spin-container {
   height: 100%;
+  .rich-text-container {
+    height: 100%;
+    background: #fff;
+    &.view-mode {
+      padding: 52px 40px 2px 40px;
+      display: flex;
+      flex-direction: column;
+    }
+    .header-wrapper {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+  }
 }
 #rich-text-dom {
   height: 100%;
+
+  .ne-viewer {
+    height: 100%;
+  }
   .title-input-container {
     padding: 52px 40px 2px 40px;
     textarea {
@@ -29,4 +47,5 @@
       resize: none;
     }
   }
+
 }

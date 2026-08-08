@@ -1,0 +1,36 @@
+.catalogue-tree-sider {
+  .ant-tree-treenode:hover {
+    .node-operation-wrapper {
+      opacity: 1;
+    }
+  }
+  
+  .node-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    position: relative;
+  }
+  
+  .node-operation-wrapper {
+    opacity: 0;
+    .anticon {
+      cursor: pointer;
+    }
+  }
+}
+.home-catalogue-tree {
+  .title-node-wrapper {
+    display: flex;
+    align-items: center;
+    .title-wrapper, .create-date-wrapper {
+      flex-shrink: 0;
+    }
+    .ant-divider {
+      min-width: auto;
+      margin: 0 10px;
+    }
+  }
+  
+}

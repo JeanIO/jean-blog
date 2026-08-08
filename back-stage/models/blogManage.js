@@ -15,17 +15,21 @@ async function model_insertBlog(blog) {
   }
 }
 
+// todo 获取博客详情
+
 async function model_getBlogByIds(ids, keys) {
   let params
   if (!Array.isArray(ids)) {
-    params = ids
-  } else {
     params = [ids]
+  } else {
+    params = ids
   }
   let selectKey = (keys || ["id", "title", "content", "is_published", "parent_id", "folder_id", "create_date", "update_date", "path"]).join(',')
-  const sql = `SELECT ${selectKey} FROM ${TABLE_NAME} WHERE id IN (?) AND is_deleted = 0`;
+  const sql = `SELECT ${selectKey} FROM ${TABLE_NAME} WHERE id IN (${params.map(_ => '?').join(',')}) AND is_deleted = 0`;
+
   try {
     const blog = await sqlPool.query(sql, params);
+ 
     /* blog[0]格式 [
     {
       id: 5,

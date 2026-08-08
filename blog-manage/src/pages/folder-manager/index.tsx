@@ -6,7 +6,7 @@ import { EllipsisOutlined } from "@ant-design/icons"
 import { setAll, removeMany, updateMany } from "@/store/folder"
 import { useAppSelector, useAppDispatch } from "@/store"
 import { BlogFolder } from "@/requests/folder"
-import BlankList from "@/assets/blank_list.png"
+import ModalFolderEdit from "@/components/ModalFolderEdit"
 import './index.less'
 const { Header, Sider, Content } = Layout
 type FolderCardProps = {
@@ -24,7 +24,7 @@ function BlogFolderCard(props: FolderCardProps) {
   const iconClick = useCallback<MouseEventHandler>(e => {
     e.stopPropagation()
   }, [])
-  const onMenuItemClick = useCallback((value) => {
+  const onMenuItemClick = useCallback((value: any) => {
     const { key, domEvent } = value
     domEvent.stopPropagation()
     if(key === "del") {
@@ -39,9 +39,14 @@ function BlogFolderCard(props: FolderCardProps) {
         }
       })
     } else {
-      
-    }
-  }, [data, onSetting, onRemove])
+    //  ModalFolderEdit.show({
+    //   folderInfo: data,
+    //   onOk: (values: BlogFolder) => {
+    //     return onSetting(values).then(() => {
+    //       message.success("更新成功")
+    //     })
+    //   }
+    //  })
   return <Card
     className="blog-folder-card"
     hoverable

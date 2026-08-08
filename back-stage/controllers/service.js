@@ -86,7 +86,6 @@ const generateCosKey = function (filename) {
 };
 
 const getFileCosKey = async (ctx) => {
-  console.log("hereasdasdasd")
   const { filename } = ctx.query;
   const cosKey = generateCosKey(filename);
   response.success(ctx, { cosKey });

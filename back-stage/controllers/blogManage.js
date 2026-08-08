@@ -34,13 +34,16 @@ async function validateBlogWithParent(childBlog, parentBlog) {
 function formatBlogTree(root, children) {
   root.children = [];
   let map = new Map()
-
+  debugger
   children.forEach((item) => {
     item.children = [];
     map.set(item.id, item);
   })
   map.set(root.id, root);
   for (let i = 0; i < children.length; i++) {
+    if(!map.get(children[i].parent_id)) {
+      console.log("这个id的父节点找不到", children[i].id)
+    }
     map.get(children[i].parent_id).children.push(children[i]);
   }
   return root;
@@ -71,7 +74,6 @@ async function createBlog(ctx, next) {
       response.badRequest(ctx, '不存在parent_id的博客');
       return;
     }
-    console.log("pppp", typeof parentBlog.folder_id, typeof folderId)
 
     if (parentBlog.folder_id !== folderId) {
       response.badRequest(ctx, "新建文件必须同属父文件所在文件夹下");
@@ -141,13 +143,16 @@ async function updateBlog(ctx, next) {
       const [result] = await model_getBlogByIds(blogId)
       response.success(ctx, result);
       await next();
-
     } else if (action === "MOVE") { // 移动博客的逻辑块
       const { body: { folder_id, parent_id = null } } = ctx.request.body;
       let path = '/'
       let needUnpublish = false, parentBlog, currentBlog
       if (parent_id !== null) { // 移动的parent_id不为null得校验 如果是null那随便
-        [parentBlog, currentBlog] = await model_getBlogByIds([parent_id, blogId]);
+        let blogs = await model_getBlogByIds([parent_id, blogId]);
+        blogs.forEach(item => {
+          if(item.id === parent_id) parentBlog = item
+          if(item.id === blogId) currentBlog = item
+        })
         if (!parentBlog) {
           response.badRequest(ctx, '不存在parent_id的博客');
           return;
@@ -181,7 +186,7 @@ async function updateBlog(ctx, next) {
       const root = formatBlogTree(currentBlog, children || []);
       
       const updateData = getUpdatePaths(path, [root], [], needUnpublish);
-      
+      console.log("updateData:", updateData)
       let date = new Date()
       updateData.forEach((item) => {
         if(item.id === blogId) {

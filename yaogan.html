@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>分数数字滚动动效</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: system-ui, sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 30px;
+      background: #f5f7fa;
+    }
+
+    .score-box {
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: #999;
+      box-shadow: 0 6px 25px rgba(0,0,0,0.15);
+      position: relative;
+      overflow: visible;
+    }
+
+    /* 数字始终居中 */
+    .num {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 80px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    /* 表情悬浮右上45°边线，不占位 */
+    .emoji {
+      position: absolute;
+      top: 0;
+      right: 0;
+      transform: translate(30%, -30%);
+      font-size: 56px;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .score-text {
+      font-size: 22px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 10px;
+      background: #2f78ff;
+      color: #fff;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .score-normal { background: #86888a; }
+    .score-good {
+      background: #3688ff;
+      animation: shakeStrong 0.8s ease-in-out;
+    }
+    .score-excellent {
+      background: #06c270;
+      animation: bounceBig 1.2s ease-out, glowFlash 0.5s 0.4s;
+      box-shadow: 0 0 40px rgba(6, 194, 112, 0.5);
+    }
+
+    .show-emoji .emoji {
+      opacity: 1;
+      visibility: visible;
+      animation: emojiPop 0.5s ease-out;
+    }
+
+    @keyframes emojiPop {
+      0% { transform: translate(30%, -30%) scale(0.3); opacity: 0; }
+      100% { transform: translate(30%, -30%) scale(1); opacity: 1; }
+    }
+    @keyframes shakeStrong {
+      0%,100%{transform: rotate(0);}
+      20%{transform: rotate(-6deg);}
+      40%{transform: rotate(6deg);}
+    }
+    @keyframes bounceBig {
+      0%{transform: scale(0.7);}
+      50%{transform: scale(1.25);}
+      100%{transform: scale(1);}
+    }
+    @keyframes glowFlash {
+      0%{filter: brightness(1);}
+      50%{filter: brightness(1.4);}
+      100%{filter: brightness(1);}
+    }
+  </style>
+</head>
+<body>
+  <div class="score-box" id="scoreBox">
+    <div class="emoji" id="emojiEle"></div>
+    <div class="num" id="numEle">0</div>
+  </div>
+  <div class="score-text" id="tipText">等待评定</div>
+  <button class="btn" onclick="runScoreAnim()">开始计分动画</button>
+
+<script>
+
+  const targetScore = 88;
+  const scoreBox = document.getElementById('scoreBox');
+  const numEle = document.getElementById('numEle');
+  const emojiEle = document.getElementById('emojiEle');
+  const tipText = document.getElementById('tipText');
+
+  const getEmoji = (score) => {
+    if (score < 60) return '😔';
+    if (score < 80) return '🙂';
+    return '🎉';
+  }
+  const getTip = (score) => {
+    if (score < 60) return '成绩一般';
+    if (score < 80) return '表现不错';
+    return '超级棒！';
+  }
+
+  function runScoreAnim() {
+    scoreBox.className = 'score-box';
+    numEle.innerText = 0;
+    emojiEle.innerText = '';
+    tipText.innerText = '计算中...';
+
+    let cur = 0;
+    const totalTime = 1400;
+    const frame = 16;
+    const steps = totalTime / frame;
+    const add = targetScore / steps;
+
+    const timer = setInterval(() => {
+      cur += add;
+      if (cur >= targetScore) {
+        cur = targetScore;
+        clearInterval(timer);
+        setFinalStyle(cur);
+      }
+      numEle.innerText = Math.floor(cur);
+    }, frame);
+  }
+
+  function setFinalStyle(score) {
+    emojiEle.innerText = getEmoji(score);
+    tipText.innerText = getTip(score);
+    scoreBox.classList.add('show-emoji');
+
+    if (score < 60) scoreBox.classList.add('score-normal');
+    else if (score < 80) scoreBox.classList.add('score-good');
+    else scoreBox.classList.add('score-excellent');
+  }
+  window.createNewOne = function createNewOne (arg1, arg2) {
+  this.arg1 = arg1;
+  this.arg2 = arg2;
+  this.getArg1 = function() {
+    return this.arg1;
+  }
+  this.getArg2 = function() {
+    return this.arg2;
+  }
+}
+class CCC{
+  constructor(arg1, arg2){
+    this.arg1 = arg1;
+    this.arg2 = arg2;
+  }
+  getArg1() {
+    return this.arg1;
+  }
+}
+
+
+const person = {
+  name: "Nick"
+}
+
+Object.defineProperty(person, "name", {
+  configurable: false,
+  get: () => {
+    return this._name 
+  },
+  set: (value) => {
+     this._name = value
+  }
+})
+person.name = "ccc"
+
+function Animal() {
+  this.type = "unkonw"
+}
+
+
+function Horse() {
+  this.type = "Horse"
+}
+Horse.prototype = new Animal()
+
+
+
+class Man{
+  constructor() {
+    this.type = "Person"
+  }
+  getPerson() {
+    return this.type
+  }
+}
+
+class Student extends Man{
+  constructor() {
+    super()
+    this.type = "Student"
+  }
+  getStudent() {
+    return this.type
+  }
+}
+
+var student = new Student()
+var man = new Man()
+Man.prototype.sayName = function() {
+  console.log("cccc")
+}
+
+var animal = new Animal()
+var horse = new Horse()
+class AA{
+  constructor(){}
+}
+
+</script>
+<script src="./new_obj.js"></script>
+</body>
+</html>

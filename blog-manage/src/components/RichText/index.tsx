@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle} from "react"
+import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react"
 import { getFileCosKey, getCOSAuth } from "@/requests/service"
 import TextAreaAutoResize from "react-textarea-autosize"
 import { message, Spin } from "antd"
@@ -10,10 +10,10 @@ type RichTextProps = {
   isLoading?: boolean,
   docContent?: {
     title: string,
-    content: string,
-    updateTime: Date,
-    createTime: Date,
-  }
+    content: string
+  },
+  onAutoSave?: (title: string, content: string) => void,
+  autoSaveDelay?: number
 }
 
 interface RichTextRef {
@@ -56,26 +56,51 @@ const getUploadService = () => {
 }
 
 const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
-  const { docContent, mode, isLoading = false } = props
+  const { docContent, mode, isLoading = false, onAutoSave, autoSaveDelay = 3000 } = props
   const cosInsRef = useRef<any>(undefined)
   const editorRef = useRef<any>()
   const titleAreaRef = useRef<HTMLTextAreaElement>(null)
   const [title, setTitle] = useState<string>('')
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const lastContentRef = useRef<string>('')
   useImperativeHandle(ref, () => {
     return {
       getInfo: () => ({ title, content: editorRef.current?.getDocument('text/lake') || '' })
     }
   })
   useEffect(() => {
+    const { title = '', content = '' } = docContent || {}
+    setTitle(title)
+    lastContentRef.current = content
     switch (mode) {
       case "edit":
         cosInsRef.current = getUploadService()
-        const { title = '', content = '' } = docContent || {}
         return initEditMode({ title, content });
       case "view":
-        return initViewMode();
+        return initViewMode({ title, content });
     }
   }, [mode, docContent])
+
+  // 添加键盘快捷键监听
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // 检查是否是保存快捷键 (Ctrl+S 或 Command+S)
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        // 触发保存操作
+        const content = editorRef.current?.getDocument('text/lake') || '';
+        console.log('保存快捷键触发', { title, content });
+        onAutoSave?.(title, content);
+      }
+    };
+
+    // 监听全局键盘事件
+    document.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [title, onAutoSave])
   const handleChangeTitle = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setTitle(e.target.value)
   }, [])
@@ -95,7 +120,7 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
             placeholder="请输入标题"
             defaultValue={title}
             ref={titleAreaRef}
-            onChange={handleChangeTitle}/>
+            onChange={handleChangeTitle} />
         </div>
       </div>,
       image: {
@@ -144,36 +169,82 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
                   }
                 });
               })
-              .catch(e => {
-                message.error("获取文件戳失败")
-                rej(e)
-              })
+                .catch(e => {
+                  message.error("获取文件戳失败")
+                  rej(e)
+                })
             })
           }
         },
       },
     });
-    // 设置内容
-    editor.setDocument('text/lake', content);
+    // 设置内容（异步设置，解决大纲不显示的问题）
+    setTimeout(() => {
+      editor.setDocument('text/lake', content);
+    }, 0);
     // 监听内容变动
     editor.on('contentchange', () => {
       console.info(editor.getDocument('text/lake'));
+      
+      // 重置自动保存定时器
+      if (autoSaveDelay && onAutoSave) {
+        if (autoSaveTimerRef.current) {
+          clearTimeout(autoSaveTimerRef.current);
+        }
+        
+        autoSaveTimerRef.current = setTimeout(() => {
+          const content = editor.getDocument('text/lake') || '';
+          if (content !== lastContentRef.current) {
+            lastContentRef.current = content;
+            console.log('自动保存触发', { title, content });
+            onAutoSave(title, content);
+          }
+        }, autoSaveDelay);
+      }
     });
     // @ts-ignore
     window.editor = editor
     editorRef.current = editor
-    
-  }, [])
-  const initViewMode = useCallback(() => {
-
+  }, [autoSaveDelay, onAutoSave])
+  
+  const initViewMode = useCallback((value: { title: string, content: string }) => {
+    const { createOpenViewer } = window.Doc
+    const { title = '', content = '' } = value
+    const viewer = createOpenViewer(document.getElementById('rich-text-dom'), {
+      header: <div className="lake-title-editor">
+        <div className="title-input-container">
+          <TextAreaAutoResize
+            placeholder="请输入标题"
+            value={title}
+            ref={titleAreaRef}
+            contentEditable={false}
+          />
+        </div>
+      </div>,
+      toc: {
+        enable: true,
+        allowModifyHash: true
+      },
+      image: {
+        onClick: (imageInfo: any) => {
+          console.log('图片被点击', imageInfo);
+          // 这里可以处理图片点击事件，比如预览大图等
+        }
+      }
+    })
+    viewer.setDocument('text/lake', content)
   }, [])
 
   return <Spin
     wrapperClassName="rich-text-spinning"
-    style={{height: "100%"}}
+    style={{ height: "100%" }}
     tip="加载中..."
     spinning={isLoading}>
-    <div id="rich-text-dom" />
+    <div className={`rich-text-container ${mode === "view" ? "view-mode" : "edit-mode"}`}>
+      {mode === "view" && <div className="header-wrapper">{title}</div>}
+      <div id="rich-text-dom"/>
+      <div></div>
+    </div>
   </Spin>
 })
 

@@ -39,7 +39,6 @@ const response = {
     }
     
     ctx.body = responseBody;
-    console.log(responseBody);
     logResponse(status, status, message, error);
   },
 
