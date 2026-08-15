@@ -110,6 +110,11 @@
       50%{filter: brightness(1.4);}
       100%{filter: brightness(1);}
     }
+    .drag-fiber {
+      width: 200px;
+      height: 50px;
+      background-color: #2f78ff;
+    }
   </style>
 </head>
 <body>
@@ -119,7 +124,7 @@
   </div>
   <div class="score-text" id="tipText">等待评定</div>
   <button class="btn" onclick="runScoreAnim()">开始计分动画</button>
-
+  <div class="drag-fiber" draggable="true" id="dragger"></div>
 <script>
 
   const targetScore = 88;
@@ -250,7 +255,21 @@ class AA{
   constructor(){}
 }
 
+document.getElementById("dragger").ondragstart = function(dragEvent) {
+  console.log(dragEvent)
+}
+
 </script>
 <script src="./new_obj.js"></script>
+<script>
+  async function bad(){
+  const arr = [Promise.resolve(1), Promise.resolve(2)]
+  // ❗这里拿到的是 Promise 对象，不是解析后的值！
+  for await(const x of arr){
+    console.log(x) // 打印 Promise，不是1、2
+  }
+}
+bad()
+</script>
 </body>
 </html>

@@ -16,10 +16,11 @@ export type CreateReqBody = {
   content: string,
   folder_id: number,
   parent_id: number | null,
+  prev_id: number | null,
 }
 
 
-export type BlogItem = Pick<BlogBody, "id" | "title" | "folder_id" | "parent_id" | "is_published" | "create_date" | "update_date">
+export type BlogItem = Pick<BlogBody, "id" | "title" | "folder_id" | "parent_id" | "is_published" | "create_date" | "update_date" | "sort_index">
 
 export type BlogBody = {
   id: number,
@@ -30,11 +31,12 @@ export type BlogBody = {
   is_published: number,
   create_date: string,
   update_date: string,
+  sort_index: number,
 }
 
 export const createBlog = (blog: CreateReqBody) => {
-  const { title = '', content = '', folder_id, parent_id } = blog
-  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id })
+  const { title = '', content = '', folder_id, parent_id, prev_id } = blog
+  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id, prev_id })
 }
 
 export const deleteBlog = (blogId: BlogItem["id"]) => {
@@ -62,8 +64,8 @@ export const getBlogContent = (blog_id: BlogItem["id"]) => {
   })
 }
 
-export const moveBlog = ({ blog_id, folder_id, parent_id }: { blog_id: BlogItem["id"], folder_id: BlogItem["folder_id"], parent_id: BlogItem["parent_id"] | null }) => {
-  return req.patch<(Pick<BlogItem, "id"> & Partial<BlogItem>)[]>(`/back-stage/blogs/${blog_id}`, { action: BlogAction.MOVE, body: { folder_id, parent_id } }).then(res => {
+export const moveBlog = ({ blog_id, folder_id, parent_id, prev_id }: { blog_id: BlogItem["id"], folder_id: BlogItem["folder_id"], parent_id: BlogItem["parent_id"] | null, prev_id: BlogItem["id"] | null }) => {
+  return req.patch<(Pick<BlogItem, "id"> & Partial<BlogItem>)[]>(`/back-stage/blogs/${blog_id}`, { action: BlogAction.MOVE, body: { folder_id, parent_id, prev_id } }).then(res => {
     const { data = [] } = res
     return data
   })

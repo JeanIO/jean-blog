@@ -3,7 +3,8 @@ import { Outlet, useLocation, useParams, history } from "umi"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { message, Layout, Dropdown, Modal } from "antd"
 import { MenuFoldOutlined, MenuUnfoldOutlined, LoadingOutlined, DownOutlined, BookOutlined } from "@ant-design/icons"
-import CatalogueTree, { CatalogueTreeProps } from "@/components/CatalogueTree"
+// import CatalogueTree, { CatalogueTreeProps } from "@/components/CatalogueTree"
+import SiderCatalogueTree, { SiderCatalogueTreeProps } from "@/components/ArboristCatalogueTree"
 import { BlogItem, createBlog, moveBlog, deleteBlog } from "@/requests/blog"
 import { BlogFolder, getFolderList } from "@/requests/folder"
 import { getBlogList } from "@/requests/blog"
@@ -13,6 +14,7 @@ import { setAll as setBlogAll, updateMany as updateBlogMany } from "@/store/blog
 
 const { Header, Content, Sider } = Layout
 import "./index.less"
+import { SiderContextProps } from "antd/lib/layout/Sider"
 
 
 export default function BlogIndex() {
@@ -51,7 +53,7 @@ export default function BlogIndex() {
     return state.blog
   })
 
-  const onTreeNodeClick = useCallback<NonNullable<CatalogueTreeProps["onTreeNodeClick"]>>((blogId) => {
+  const onTreeNodeClick = useCallback<NonNullable<SiderCatalogueTreeProps["onTreeNodeClick"]>>((blogId) => {
     history.push(`/folders/${folderId}/${blogId}`)
   }, [folderId])
   
@@ -75,8 +77,8 @@ export default function BlogIndex() {
 
   }, [folderId])
 
-  const onDrag = useCallback<NonNullable<CatalogueTreeProps["onDrag"]>>((dragNode, parentNode) => {
-    console.log("拖动", dragNode, parentNode)
+  const onDrag = useCallback<NonNullable<SiderCatalogueTreeProps["onDrag"]>>((dragNode, parentNode, prevId) => {
+    console.log("拖动", dragNode, parentNode, prevId)
     let content = ""
     if(parentNode !== null && dragNode.is_published !== parentNode.is_published && parentNode.is_published === 0) { // 将子博客放到了未发布的父博客下
       content = `检测到您正在把已发布的博客《${dragNode.title}》及子博客移动到《${parentNode.title}》的博客下方，您的博客将会被重置为未发布状态，是否继续？`
@@ -89,22 +91,25 @@ export default function BlogIndex() {
       okText: "确定",
       cancelText: "取消",
       onOk: () => {
-        return moveBlog({ blog_id: dragNode.id, folder_id: Number(folderId), parent_id: parentNode === null ? null : parentNode.id}).then((data) => {
+        return moveBlog({ blog_id: dragNode.id, folder_id: Number(folderId), parent_id: parentNode === null ? null : parentNode.id, prev_id: prevId }).then((data) => {
+          console.log("cvv", data)
           const updateData = data.map(item => {
             return {
               id: item.id,
-              parent_id: item.parent_id || blogEntities[item.id].parent_id,
+              parent_id: item.parent_id === undefined ?  blogEntities[item.id].parent_id : item.parent_id,
               update_date: item.update_date,
-              is_published: item.is_published || blogEntities[item.id].is_published
+              is_published: item.is_published || blogEntities[item.id].is_published,
+              sort_index: item.sort_index
             }
           })
+          console.log("herer", updateData)
           dispatch(updateBlogMany(updateData))
         })
       }
     })
   }, [folderId, blogEntities, modal])
 
-  const onDeleteBlog = useCallback<NonNullable<CatalogueTreeProps["onDeleteBlog"]>>((blogId) => {
+  const onDeleteBlog = useCallback<NonNullable<SiderCatalogueTreeProps["onDeleteBlog"]>>((blogId) => {
     Modal.confirm({
       title: "删除确认",
       content: `您确定要删除这篇博客吗？删除后将无法恢复。`,
@@ -129,12 +134,13 @@ export default function BlogIndex() {
     })
   }, [folderId, dispatch])
 
-  const onCreateChildBlog = useCallback<NonNullable<CatalogueTreeProps["onCreateChildBlog"]>>((parentBlogId = null) => {
+  const onCreateChildBlog = useCallback<NonNullable<SiderCatalogueTreeProps["onCreateChildBlog"]>>((parentBlogId = null, prevId = null) => {
     createBlog({
       title: "《未命名博客标题》",
       content: "",
       folder_id: Number(folderId),
-      parent_id: parentBlogId
+      parent_id: parentBlogId,
+      prev_id: prevId
     }).then(() => {
       message.success("子博客创建成功")
       // 重新获取博客列表
@@ -184,9 +190,11 @@ export default function BlogIndex() {
           <BookOutlined />
         {title}{isFolderLoading ? <LoadingOutlined /> :  <DownOutlined />}</div>
       </Dropdown>
-        <CatalogueTree
+        <SiderCatalogueTree
           blogEntities={blogEntities}
           rootId={null}
+          folderId={folderId !== undefined ? Number(folderId) : undefined}
+          onHomeClick={(fid) => history.push(`/folders/${fid}/home`)}
           onDrag={onDrag}
           onTreeNodeClick={onTreeNodeClick}
           selectedKeys={selectedKeys}

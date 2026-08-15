@@ -16,12 +16,15 @@
     "axios": "^1.13.2",
     "cos-js-sdk-v5": "^1.10.1",
     "dayjs": "^1.11.19",
+    "lodash": "^4.18.1",
+    "react-arborist": "^3.16.0",
     "react-redux": "^9.2.0",
     "react-textarea-autosize": "^8.5.9",
     "tailwindcss": "^4.1.17",
     "umi": "^4.5.0"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.25",
     "@types/react": "^18.0.33",
     "@types/react-dom": "^18.0.11",
     "typescript": "^5.0.3"

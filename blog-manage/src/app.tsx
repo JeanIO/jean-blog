@@ -1,5 +1,6 @@
 // src/app.tsx
 import React from 'react';
+import './global.less';
 import { Provider } from 'react-redux';
 import { ConfigProvider } from "antd"
 import store from "@/store"

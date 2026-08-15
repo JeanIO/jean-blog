@@ -1,0 +1,210 @@
+import sqlPool from "./sql.js"
+import type { BlogFilter, BatchUpdateBlogItem, SQLBlog } from "../types/models.js"
+import type { InsertBlog } from "./types/blogManage.js"
+
+const TABLE_NAME = "blog_manage"
+
+export async function model_getSortIndexByPrevId(parentId: number | null, prevId: number | null): Promise<number> {
+  let prevSortIndex = 0
+  try {
+    if (prevId) {
+      const [value] = await model_getBlogByIds(prevId)
+      prevSortIndex = (value as SQLBlog).sort_index
+    const sql = 
+    `SELECT title, content, is_published, folder_id, parent_id, path, create_date, update_date, sort_index
+     FROM ${TABLE_NAME} 
+     WHERE parent_id <=> ? AND sort_index > ? 
+     ORDER BY sort_index DESC LIMIT 1`
+    const [nextValue] = await sqlPool.query(sql, [parentId, prevSortIndex]);
+    console.log( "nextValue:", nextValue)
+    if(nextValue.length) {
+      return (nextValue[0].sort_index + prevSortIndex) / 2
+    }
+    return prevSortIndex + 8000
+  }
+  return 0
+  } catch (e) {
+    throw e;
+  }
+}
+
+async function model_insertBlog(blog: InsertBlog): Promise<SQLBlog> {
+  const now = new Date()
+  const { title, content = "", is_published = 0, folder_id, parent_id = null, path = "", sort_index } = blog
+  const sql = `INSERT INTO ${TABLE_NAME} 
+  (title, content, is_published, folder_id, parent_id, path, create_date, update_date, sort_index) VALUES 
+  (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  const params = [title, content, is_published, folder_id, parent_id, path, now, now, sort_index]
+  try {
+    const value: any = await sqlPool.query(sql, params)
+    const id = value[0].insertId
+    return { id, title, content: content!, is_published, parent_id, folder_id, path: path!, create_date: now, update_date: now, sort_index }
+  } catch (e) {
+    throw e
+  }
+}
+
+async function model_getBlogByIds(ids: number | number[], keys?: string[]): Promise<(SQLBlog | null)[]> {
+  let params: number[]
+  if (!Array.isArray(ids)) {
+    params = [ids]
+  } else {
+    params = ids
+  }
+  const selectKey = (keys || ["id", "title", "content", "is_published", "parent_id", "folder_id", "create_date", "update_date", "path", "sort_index"]).join(",")
+  const sql = `SELECT ${selectKey} FROM ${TABLE_NAME} WHERE id IN (${params.map(() => "?").join(",")}) AND is_deleted = 0`
+
+  try {
+    const res = await sqlPool.query(sql, params)
+    const blogs: SQLBlog[] = res[0]
+    
+    const blogMapper = new Map<number, SQLBlog>()
+    blogs.forEach((b) => {
+      blogMapper.set(b.id, b)
+    })
+    return params.map(id => {
+      return blogMapper.get(id) || null
+    })
+  } catch (e) {
+    throw e
+  }
+}
+
+async function model_getPathBlogs(body: { isDeleted?: number; blogId: number }): Promise<SQLBlog[]> {
+  const { isDeleted = 0, blogId } = body
+  const sql = `SELECT id, title, is_published, parent_id, folder_id, path, create_date, update_date, sort_index FROM ${TABLE_NAME} WHERE is_deleted = ? AND path LIKE ?`
+  const params = [isDeleted, `%${blogId}%`]
+  try {
+    const blogs: any = await sqlPool.query(sql, params)
+    return (blogs[0] || []) as SQLBlog[]
+  } catch (e) {
+    throw e
+  }
+}
+
+async function model_getBlogByIDFilter(filter: BlogFilter): Promise<SQLBlog[]> {
+  const { blogId, parentId, folderId } = filter
+  try {
+    let sql = `SELECT id, title, is_published, parent_id, folder_id, sort_index, create_date, update_date FROM ${TABLE_NAME} WHERE 1=1 AND is_deleted = 0`
+    const params: any[] = []
+    if (blogId !== undefined) {
+      sql += " AND id = ?"
+      params.push(blogId)
+    }
+    if (parentId !== undefined) {
+      if (parentId === null) {
+        sql += " AND parent_id IS NULL"
+      } else {
+        sql += " AND parent_id = ?"
+        params.push(parentId)
+      }
+    }
+    if (folderId) {
+      sql += " AND folder_id = ?"
+      params.push(folderId)
+    }
+
+    const [blogs]: any = await sqlPool.query(sql, params)
+    return (blogs || []) as SQLBlog[]
+  } catch (e) {
+    throw e
+  }
+}
+
+async function model_getBlogsFilter(filter: BlogFilter): Promise<any> {
+  let sql = `SELECT * FROM ${TABLE_NAME}`
+  const params: any[] = []
+  if (filter.title) {
+    sql += " AND title LIKE ?"
+    params.push(`%${filter.title}%`)
+  }
+  if (filter.content) {
+    sql += " AND content LIKE ?"
+    params.push(`%${filter.content}%`)
+  }
+  return sqlPool.query(sql, params)
+}
+
+async function model_deleteBlog(id: number): Promise<any> {
+  const sql = `UPDATE ${TABLE_NAME} SET is_deleted = 1 WHERE id = ?`
+  const params = [id]
+  return sqlPool.query(sql, params)
+}
+
+async function model_updateBlog(blog: Partial<SQLBlog> & {id: SQLBlog["id"]} | (Partial<SQLBlog> & {id: SQLBlog["id"]})[]): Promise<any> {
+  const keys = ["title", "content", "is_published", "parent_id", "update_date", "path", "sort_index"]
+  if (Array.isArray(blog)) {
+    const params: any[] = []
+    let sql = `UPDATE ${TABLE_NAME} SET`
+    const ids = blog.map(item => item.id)
+    keys.forEach((key) => {
+      blog.forEach(item => {
+        if ((item as any)[key] !== undefined) {
+          sql += ` ${key} = CASE WHEN id = ? THEN ? ELSE ${key} END,`
+          params.push(item.id, (item as any)[key])
+        }
+      })
+    })
+    sql = sql.slice(0, -1) + ` WHERE id IN (${ids.join(",")})`
+    
+    try {
+      await sqlPool.query(sql, params)
+      const blogs = await model_getBlogByIds(ids, ["update_date"])
+      return blogs
+    } catch (e) {
+      throw e
+    }
+  } else {
+    const params: any[] = []
+    let sql = `UPDATE ${TABLE_NAME} SET`
+    const id = blog.id
+    keys.forEach((key) => {
+      if ((blog as any)[key] !== undefined) {
+        sql += ` ${key} = ?,`
+        params.push((blog as any)[key])
+      }
+    })
+    sql = sql.slice(0, -1) + ` WHERE id = ?`
+    params.push(id)
+    try {
+      const result: any = await sqlPool.query(sql, params)
+      return result[0]
+    } catch (e) {
+      throw e
+    }
+  }
+}
+
+async function model_getParentBlog(ids: number[]): Promise<(SQLBlog | null)[]> {
+  const sql = `SELECT
+  parent.id,
+  parent.title,
+  parent.is_published,
+  parent.create_date,
+  parent.update_date,
+  parent.sort_index
+FROM ${TABLE_NAME} AS child
+LEFT JOIN ${TABLE_NAME} AS parent
+  ON child.parent_id = parent.id
+  AND parent.is_deleted = 0
+WHERE
+  child.id in (${ids.join(",")})
+  AND child.is_deleted = 0;`
+  try {
+    const [results]: any = await sqlPool.query(sql)
+    return (results || []).map((item: any) => item.id === null ? null : (item as SQLBlog))
+  } catch (e) {
+    throw e
+  }
+}
+
+export {
+  model_updateBlog,
+  model_insertBlog,
+  model_getBlogByIds,
+  model_getBlogsFilter,
+  model_getBlogByIDFilter,
+  model_deleteBlog,
+  model_getPathBlogs,
+  model_getParentBlog,
+}

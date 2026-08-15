@@ -8,6 +8,7 @@ import { useAppSelector, useAppDispatch } from "@/store"
 import { BlogFolder } from "@/requests/folder"
 import ModalFolderEdit from "@/components/ModalFolderEdit"
 import './index.less'
+
 const { Header, Sider, Content } = Layout
 type FolderCardProps = {
   data: BlogFolder,
@@ -16,7 +17,8 @@ type FolderCardProps = {
   onClick: (id: number) => void
 }
 
-function BlogFolderCard(props: FolderCardProps) {
+function BlogFolderCard(props: FolderCardProps)
+{
   const { data, onSetting, onRemove, onClick } = props
   const handleClick = useCallback(() => {
     onClick(data.id)
@@ -47,6 +49,8 @@ function BlogFolderCard(props: FolderCardProps) {
     //     })
     //   }
     //  })
+    }
+  }, [])
   return <Card
     className="blog-folder-card"
     hoverable
