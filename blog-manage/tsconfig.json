@@ -1,4 +1,3 @@
 {
-  "extends": "./src/.umi/tsconfig.json",
-  "noImplicitAny": false
+  "extends": "./src/.umi/tsconfig.json"
 }

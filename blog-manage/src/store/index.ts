@@ -1,8 +1,10 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit'
 import { useSelector, TypedUseSelectorHook, useDispatch } from "react-redux"
 import folderStore from "./folder"
+import blogStore from "./blog"
 const reducer = combineReducers({
-    folder: folderStore
+    folder: folderStore,
+    blog: blogStore
 })
 const store = configureStore({
   reducer

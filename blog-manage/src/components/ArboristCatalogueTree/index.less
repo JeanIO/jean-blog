@@ -1,0 +1,161 @@
+.arborist-catalogue-tree {
+  /* ===== 首页节点栏（独立于树） ===== */
+  .arborist-home-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 35px;
+    padding: 0 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.15s;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+
+    &__left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    &__icon {
+      font-size: 14px;
+    }
+
+    &__title {
+      font-size: 14px;
+    }
+
+    &__plus {
+      font-size: 14px;
+      color: #999;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 2px;
+      transition: color 0.15s, background-color 0.15s;
+
+      &:hover {
+        background-color: #e6f4ff;
+      }
+    }
+
+    /* 当前处于首页时的选中态 */
+    &--active {
+      background-color: #e6f4ff;
+    }
+  }
+
+  /* 选中态背景 */
+  .arborist-node--selected {
+    background-color: #e6f4ff !important;
+  }
+
+  /* ===== 节点外层：承载缩进，不参与高亮 ===== */
+  .arborist-node-wrapper {
+    /* style 中的 paddingLeft 即树的层级缩进，高亮范围不覆盖这里 */
+  }
+
+  /* ===== 通用节点（内容区，仅此区域高亮） ===== */
+  .arborist-node {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    padding: 0px 8px;
+    border-radius: 4px;
+    line-height: 30px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+
+  /* ===== 首页节点 ===== */
+  .arborist-node--home {
+    font-weight: 500;
+    color: #1677ff;
+  }
+
+  .arborist-node__home-icon {
+    margin-right: 6px;
+    font-size: 14px;
+  }
+
+  /* ===== 节点内容区 ===== */
+  .arborist-node__content {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    position: relative;
+    padding: 0 5px;
+    .arborist-node__arrow {
+      width: 25px;
+      text-align: left;
+    }
+    .arborist-node__title {
+      flex: 1;
+    }
+  }
+
+
+  .arborist-node__title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ===== 操作按钮（hover 显示） ===== */
+  .arborist-node__actions {
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+    margin-left: 8px;
+    cursor: pointer;
+  }
+
+  .arborist-node:hover .arborist-node__actions {
+    opacity: 1;
+  }
+
+  /* ===== 拖拽中的原节点 ===== */
+  .arborist-node--dragging {
+    opacity: 0.3;
+  }
+
+  /* ===== HomeTree 节点样式：标题在行首、虚线填充、日期在行末 ===== */
+  .arborist-node__content--home {
+    .arborist-node__title--home {
+      flex: none;
+    }
+
+    .arborist-node__divider {
+      flex: 1;
+      min-width: auto;
+      margin: 0 10px;
+    }
+
+    .arborist-node__date {
+      flex-shrink: 0;
+      color: #999;
+      font-size: 12px;
+    }
+  }
+}
+
+/* ===== 拖拽预览（悬浮的影子）透明 ===== */
+.arborist-drag-preview {
+  padding: 4px 12px;
+  background: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333;
+  opacity: 0.3;
+  white-space: nowrap;
+  pointer-events: none;
+}

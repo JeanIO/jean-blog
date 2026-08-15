@@ -8,7 +8,13 @@ export type BlogFolder = {
   desc_info: string
 }
 
-export type CreateFolderReqBody = {
+export type CreateFolder = {
+  title: string,
+  desc_info: string
+}
+
+export type ResFolder = {
+  id: number,
   title: string,
   desc_info: string
 }
@@ -25,11 +31,11 @@ export type FolderList = {
 //     return { id, title, descInfo: desc_info }
 //   })
 // }
-export const createFolder = (folder: CreateFolderReqBody) => {
-  const { title = '', descInfo = '' } = folder
-  return req.post('/back-stage/folders', { title, desc_info: descInfo }).then(v => {
+export const createFolder = (folder: CreateFolder) => {
+  const { title = '', desc_info = '' } = folder
+  return req.post<CreateFolder, AxiosResponse<ResFolder>>('/back-stage/folders', { title, desc_info }).then(v => {
     const { data: { title, desc_info } } = v
-    return { title: title, descInfo: desc_info }
+    return { title, desc_info }
   })
 }
 
@@ -51,9 +57,16 @@ export const getFolderList = () => {
 //   })
 // }
 
-export const updateFolder = (body: CreateFolderReqBody & { id: BlogFolder["id"] }) => {
+export const getFolderById = (id: string | number) => {
+  return req.get<BlogFolder, AxiosResponse<ResFolder>>(`/back-stage/folders/${id}`).then(v => {
+    const { data: { id, title, desc_info } } = v
+    return { id, title, desc_info }
+  })
+}
+
+export const updateFolder = (body: CreateFolder & { id: BlogFolder["id"] }) => {
   const { id, title, desc_info } = body
-  return req.patch<CreateFolderReqBody, AxiosResponse<BlogFolder> >(`/back-stage/folders/${id}`, { title, desc_info }).then(v => {
+  return req.patch<CreateFolder, AxiosResponse<ResFolder> >(`/back-stage/folders/${id}`, { title, desc_info }).then(v => {
     const { data: { title, desc_info, id } } = v
     return { title, desc_info, id }
   })

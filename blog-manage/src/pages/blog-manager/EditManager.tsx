@@ -1,7 +1,11 @@
 
-import { Input, Button, message, Menu } from "antd"
+import { Button, message } from "antd"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { createBlog } from "@/requests/blog"
+import { createPortal } from "react-dom"
+import { createBlog, getBlogContent, saveBlog } from "@/requests/blog"
+import { useAppDispatch, useAppSelector } from "@/store"
+import { updateMany } from "@/store/blog"
+import { useParams, useOutletContext } from "umi"
 import RichText from "@/components/RichText"
 
 import "./EditManage.less"
@@ -9,29 +13,64 @@ import "./EditManage.less"
 
 export default function EditManager() {
   const [saveLoading, setSaveLoading] = useState(false)
+  // @ts-ignore
+  const { leftSpaceRef, rightSpaceRef } = useOutletContext()
   const richText = useRef<any>(null) // 保存editor实例Ref
-  
+  const dispatch = useAppDispatch()
+  const { blogId } = useParams()
+  const [docContent, setDocContent] = useState<{ title: string, content: string }>({ title: '', content: '' })
+  const [mode, setMode] = useState<'edit' | 'view'>('view')
+  const blogInfo = useAppSelector(state => {
+    return state.blog.entities[Number(blogId)] || {}
+  })
+  useEffect(() => {
+    if (blogId === undefined) {
+      message.error("请选择博客")
+      return
+    }
+    setMode('view')
+    getBlogContent(Number(blogId)).then(v => {
+      const { data: { content, title } } = v
+      setDocContent({ content, title })
+    })
+  }, [blogId])
   const onSubmit = useCallback(() => {
-    console.log(richText.current?.getInfo())
     const { title, content } = richText.current?.getInfo() || {}
+    if(blogId === undefined) return
     setSaveLoading(true)
-    createBlog({ title, content }).then((res) => {
-      console.log("保存成功", res)
+    saveBlog({ title, content, id: Number(blogId) }).then((res) => {
       message.success("保存成功")
+      const { content: _, ...rest } = res.data || {}
+      setDocContent({ title, content })
+      dispatch(updateMany([{ ...rest, id: Number(blogId), title }]))
     }).finally(() => {
+      setMode('view')
       setSaveLoading(false)
     })
-  }, [])
-
-  useEffect(() => {
-    // createFolder({ title: "sdsd", descInfo:"ccccccsdsd" })
-  }, [])
-
+  }, [blogId])
+  const onAutoSave = useCallback((title: string, content: string) => {
+    console.log("自动保存", title, content)
+  }, [onSubmit])
+  const onToggleMode = useCallback((value: 'edit' | 'view') => {
+    setMode(value)
+  }, [mode])
+  // if(leftSpaceRef.current == null || ) return "waiting"
   return <div className="component-content-container edit-mamager-container">
-    <RichText mode="edit" ref={richText} />
-    <div className="save-btn-wrapper">
-      <Button>保存草稿</Button>
-      <Button loading={saveLoading} type="primary" onClick={onSubmit}>创建</Button>
-    </div>
+    <RichText
+    mode={mode}
+    ref={richText}
+    docContent={docContent}
+    onAutoSave={onAutoSave}
+    autoSaveDelay={10000}
+    />
+    {rightSpaceRef.current == null ? null :
+      createPortal(
+        mode === 'view' ? <Button type="primary" onClick={() => onToggleMode("edit")}>编辑</Button> :
+          <div className="operations-wrapper">
+            <Button onClick={() => onToggleMode("view")}>取消</Button>
+            <Button loading={saveLoading} type="primary" onClick={onSubmit}>保存</Button>
+          </div>, rightSpaceRef.current)
+    }
+
   </div>
 }

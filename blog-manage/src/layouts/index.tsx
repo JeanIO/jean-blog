@@ -1,8 +1,5 @@
 import Slot from "./layout"
-import { ConfigProvider } from "antd"
-import { Provider } from "react-redux"
-import store from "@/store"
-import zhCN from 'antd/es/locale/zh_CN';
+
 import './index.less'
 
 
@@ -13,13 +10,6 @@ import './index.less'
 //   }
 // })
 
-export default function RootPage() {
-  
-  return (
-    <Provider store={store}>
-      <ConfigProvider locale={zhCN}>
-        <Slot></Slot>
-      </ConfigProvider>
-    </Provider>
-  )
+export default function Layout() {
+  return (<Slot></Slot>)
 }
