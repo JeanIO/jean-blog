@@ -48,9 +48,14 @@ export default function EditManager() {
       setSaveLoading(false)
     })
   }, [blogId])
-  const onAutoSave = useCallback((title: string, content: string) => {
-    console.log("自动保存", title, content)
-  }, [onSubmit])
+  // 自动保存方法（由 RichText 触发）：执行真实保存并同步 store；失败向上抛出由 RichText 处理状态
+  const onAutoSave = useCallback(async (title: string, content: string) => {
+    if (blogId === undefined) return
+    const res = await saveBlog({ title, content, id: Number(blogId) })
+    const { content: _, ...rest } = res.data || {}
+    setDocContent({ title, content })
+    dispatch(updateMany([{ ...rest, id: Number(blogId), title }]))
+  }, [blogId, dispatch])
   const onToggleMode = useCallback((value: 'edit' | 'view') => {
     setMode(value)
   }, [mode])
@@ -61,7 +66,7 @@ export default function EditManager() {
     ref={richText}
     docContent={docContent}
     onAutoSave={onAutoSave}
-    autoSaveDelay={10000}
+    autoSaveDelay={15000}
     />
     {rightSpaceRef.current == null ? null :
       createPortal(

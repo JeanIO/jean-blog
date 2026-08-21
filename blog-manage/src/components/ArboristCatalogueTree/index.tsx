@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from "react"
+import { useMemo, useCallback, useRef, memo } from "react"
 import { CaretRightOutlined, CaretDownOutlined, HomeOutlined, MoreOutlined, PlusOutlined } from "@ant-design/icons"
 import { Tree, type NodeRendererProps, type DragPreviewProps } from "react-arborist"
 import { BlogItem } from "@/requests/blog"
@@ -21,6 +21,7 @@ export type SiderCatalogueTreeProps = {
   activeKeys?: string[]
   onCreateChildBlog?: (parentBlogId: number | null, prevId: number | null) => void
   onDeleteBlog?: (blogId: number) => void
+  onPublishBlog?: (blogId: number, publishStatus: number) => void
 }
 
 
@@ -86,7 +87,8 @@ export function buildTree(
   return roots
 }
 
-export default function CatalogueTree(props: SiderCatalogueTreeProps) {
+const CatalogueTree = memo((props: SiderCatalogueTreeProps) => {
+  console.log("CatalogueTree render", props)
   const {
     blogEntities = {},
     rootId = null,
@@ -98,6 +100,7 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
     selectedKeys,
     onCreateChildBlog,
     onDeleteBlog,
+    onPublishBlog,
   } = props
 
   const treeRef = useRef<TreeApi<ArboristNode>>(null)
@@ -116,9 +119,15 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
         onCreateChildBlog?.(blogId, prevId)
       } else if (action === "DELETE") {
         onDeleteBlog?.(blogId)
+      } else if (action === "PUBLISH") {
+        const target = blogEntities[blogId]
+        if (target) {
+          // 已发布 → 下架；未发布 → 发布
+          onPublishBlog?.(blogId, target.is_published === 1 ? 0 : 1)
+        }
       }
     },
-    [onCreateChildBlog, onDeleteBlog, blogEntities],
+    [onCreateChildBlog, onDeleteBlog, onPublishBlog, blogEntities],
   )
 
   const onMove = useCallback(
@@ -163,15 +172,13 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
     [onTreeNodeClick],
   )
 
-  const selection = selectedKeys?.length
-    ? String(selectedKeys[0])
-    : undefined
-
   /** 自定义节点渲染 */
   const NodeRenderer = useCallback(
     ({ node, style, dragHandle }: NodeRendererProps<ArboristNode>) => {
       const { data } = node
       const blog = data
+      // 选中态由页面解析 URL 后的 selectedKeys 决定：包含当前 id 即选中
+      const isSelected = selectedKeys?.some(key => String(key) === node.id) ?? false
       const menuItems: MenuProps["items"] = [
         {
           key: "ADD_CHILD",
@@ -183,6 +190,11 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
           label: "删除博客",
           onClick: () => onMenuSelect(Number(blog.id), "DELETE"),
         },
+        {
+          key: "PUBLISH",
+          label: blog.is_published === 1 ? "下架" : "发布",
+          onClick: () => onMenuSelect(Number(blog.id), "PUBLISH"),
+        },
       ]
 
       return (
@@ -191,7 +203,7 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
           ref={dragHandle}
           className="arborist-node-wrapper"
         >
-          <div className={`arborist-node ${node.isSelected ? "arborist-node--selected" : ""} ${node.isDragging ? "arborist-node--dragging" : ""}`}>
+          <div className={`arborist-node ${isSelected ? "arborist-node--selected" : ""} ${node.isDragging ? "arborist-node--dragging" : ""}`}>
             <div className="arborist-node__content">
               {/* 折叠/展开图标 */}
               {node.children?.length ?  (
@@ -204,6 +216,10 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
               ) : (
                 <span className="arborist-node__arrow arborist-node__arrow--placeholder" />
               )}
+              {/* 发布状态标识：已发布绿色光晕、未发布灰色 */}
+              <span
+                className={`arborist-node__published-dot ${blog.is_published === 1 ? "arborist-node__published-dot--published" : ""}`}
+              />
               <span className="arborist-node__title">{blog.title}</span>
               <div
                 className="arborist-node__actions"
@@ -221,7 +237,7 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
         </div>
       )
     },
-    [onTreeNodeClick, onMenuSelect],
+    [onTreeNodeClick, onMenuSelect, selectedKeys],
   )
 
   /** 拖拽时跟随鼠标的透明预览 */
@@ -289,7 +305,6 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
         rowHeight={30}
         onMove={onMove}
         onSelect={onSelect}
-        selection={selection}
         renderDragPreview={DragPreview}
         openByDefault
       >
@@ -297,4 +312,6 @@ export default function CatalogueTree(props: SiderCatalogueTreeProps) {
       </Tree>
     </div>
   )
-}
+})
+
+export default CatalogueTree

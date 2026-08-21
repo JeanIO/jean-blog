@@ -72,8 +72,10 @@ async function model_getBlogByIds(ids: number | number[], keys?: string[]): Prom
 
 async function model_getPathBlogs(body: { isDeleted?: number; blogId: number }): Promise<SQLBlog[]> {
   const { isDeleted = 0, blogId } = body
+  // 返回 blogId 的所有后代（不含自身）；精确匹配 path 片段，避免 id 子串误匹配（如 1 匹配到 12）
+  // 注意：根级节点的 path 为 "/"，自身 id 不出现在 path 中，需要自身时应由调用方显式处理
   const sql = `SELECT id, title, is_published, parent_id, folder_id, path, create_date, update_date, sort_index FROM ${TABLE_NAME} WHERE is_deleted = ? AND path LIKE ?`
-  const params = [isDeleted, `%${blogId}%`]
+  const params = [isDeleted, `%/${blogId}%`]
   try {
     const blogs: any = await sqlPool.query(sql, params)
     return (blogs[0] || []) as SQLBlog[]

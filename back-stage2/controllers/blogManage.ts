@@ -221,24 +221,40 @@ export async function updateBlog(ctx: Context, next: Next): Promise<void> {
       response.success(ctx, updateData)
       await next()
     } else  {
-      const { publish_status = 0 } = body.body || {}
+      // with_children 0：表示独自发布 1：表示连同子博客一起发布
+      const { publish_status = 0, with_children = 0 } = body.body || {}
+      const now = new Date()
       if (publish_status === 0) {
+        // 下架：自身连同所有子博客一起下架（强制级联，不可选择）
         const children = await model_getPathBlogs({ blogId: Number(blogId) })
-        const publishedChildren = children.filter((item: SQLBlog) => item.is_published === 1)
-        if (publishedChildren.length > 0) {
-          response.badRequest(ctx, "下架发布必须先下架所有子博客")
-          return
-        }
+        console.log("here", children)
+        const updateData: BatchUpdateBlogItem[] = [
+          { id: Number(blogId), is_published: 0, update_date: now },
+          ...children.map((item) => ({ id: item.id, is_published: 0, update_date: now })),
+        ]
+        await model_updateBlog(updateData)
+        response.success(ctx, updateData)
       } else {
+        // 发布：所有父博客必须先发布
         const [parentBlog] = await model_getParentBlog([Number(blogId)])
         if (parentBlog !== null && parentBlog.is_published !== 1) {
           response.badRequest(ctx, "发布博客必须先发布所有父博客")
           return
         }
+        if (with_children === 1) {
+          // 连同子博客一起发布：自身 + 所有后代批量更新
+          const children = await model_getPathBlogs({ blogId: Number(blogId) })
+          const updateData: BatchUpdateBlogItem[] = [
+            { id: Number(blogId), is_published: 1, update_date: now },
+            ...children.map((item) => ({ id: item.id, is_published: 1, update_date: now })),
+          ]
+          await model_updateBlog(updateData)
+          response.success(ctx, updateData)
+        } else {
+          await model_updateBlog({ id: Number(blogId), is_published: 1, update_date: now })
+          response.success(ctx, { id: Number(blogId), publish_status, update_date: now })
+        }
       }
-      const now = new Date()
-      await model_updateBlog({ id: Number(blogId), is_published: publish_status, update_date: now })
-      response.success(ctx, { id: Number(blogId), publish_status, update_date: now })
     }
   } catch (e: any) {
     response.internalError(ctx, "Failed to update blog", e)

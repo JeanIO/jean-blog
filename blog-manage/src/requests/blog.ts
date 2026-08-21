@@ -34,9 +34,12 @@ export type BlogBody = {
   sort_index: number,
 }
 
-export const createBlog = (blog: CreateReqBody) => {
+export const createBlog = (blog: CreateReqBody): Promise<CreateBlog> => {
   const { title = '', content = '', folder_id, parent_id, prev_id } = blog
-  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id, prev_id })
+  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id, prev_id }).then((res) => {
+    // 拦截器返回的是 { code, message, data } 信封，解包出 data
+    return res.data
+  })
 }
 
 export const deleteBlog = (blogId: BlogItem["id"]) => {
@@ -71,6 +74,8 @@ export const moveBlog = ({ blog_id, folder_id, parent_id, prev_id }: { blog_id: 
   })
 }
 
-
-
-
+export const publishBlog = (blog_id: BlogItem["id"], is_published: BlogItem["is_published"], with_children: number = 0) => {
+  return req.patch(`/back-stage/blogs/${blog_id}`, { action: BlogAction.PUBLISH, body: { publish_status: is_published, with_children } }).then(res => {
+    return res.data
+  })
+}

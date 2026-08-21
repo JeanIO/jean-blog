@@ -18,11 +18,16 @@ request.interceptors.response.use((res) => {
     case 201:
     case 204:
       return Promise.resolve(data)
-    case 500:
-      message.error("服务器错误，请报告给大帅比--John")
+    default: {
+      // 统一错误逻辑：4xx 业务错误提示后端 message；5xx 提示服务器错误
+      const msg = data?.message
+      if (status >= 500) {
+        message.error(msg || "服务器错误，请报告给大帅比--John")
+      } else if (status >= 400) {
+        message.error(msg || "请求失败")
+      }
       return Promise.reject(data)
-    default:
-      return Promise.resolve(res)
+    }
   }
 }, (error) => {
   return Promise.reject((error))

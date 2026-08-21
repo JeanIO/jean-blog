@@ -5,8 +5,7 @@
     "dev": "umi dev",
     "build": "umi build",
     "postinstall": "umi setup",
-    "setup": "umi setup",
-    "start": "npm run dev"
+    "setup": "umi setup"
   },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",

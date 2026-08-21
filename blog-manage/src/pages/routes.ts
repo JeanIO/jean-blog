@@ -16,6 +16,11 @@ const routes = [
     noMenu: true,
     layout: false
   },
+  {
+    path:"/personal-center",
+    component: "./personal-center",
+    label: "个人中心"
+  },
   { path: "/*", redirect: '/dashboard' },
 ]
 export default routes
