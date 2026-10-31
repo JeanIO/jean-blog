@@ -14,8 +14,8 @@ const folderStore = createSlice({
   name: "folder",
   initialState: folderAdapter.getInitialState(),
   reducers: {
-    addMany: (state, action:  PayloadAction<Folder>) => {
-      folderAdapter.addMany(state, action.payload)
+    addOne: (state, action:  PayloadAction<Folder>) => {
+      folderAdapter.addOne(state, action.payload)
     },
     setAll: (state, action: PayloadAction<Folder[]>) => {
       folderAdapter.setAll(state, action.payload)
@@ -30,5 +30,5 @@ const folderStore = createSlice({
   }
 })
 
-export const { setAll, addMany, updateMany, removeMany } = folderStore.actions
+export const { setAll, addOne, updateMany, removeMany } = folderStore.actions
 export default folderStore.reducer

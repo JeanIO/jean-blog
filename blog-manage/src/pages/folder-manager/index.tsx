@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, MouseEventHandler } from "react"
-import { getFolderList, deleteFolder, updateFolder } from "@/requests/folder"
+import { getFolderList, deleteFolder, updateFolder, createFolder } from "@/requests/folder"
 import { Layout } from "antd"
 import { Button, Card, Spin, Divider, Empty, Dropdown, Modal, message } from "antd"
 import { EllipsisOutlined } from "@ant-design/icons"
-import { setAll, removeMany, updateMany } from "@/store/folder"
+import { setAll, removeMany, updateMany, addOne } from "@/store/folder"
 import { useAppSelector, useAppDispatch } from "@/store"
 import { BlogFolder } from "@/requests/folder"
 import ModalFolderEdit from "@/components/ModalFolderEdit"
@@ -14,11 +14,11 @@ type FolderCardProps = {
   data: BlogFolder,
   onRemove: <T = any>(id: BlogFolder["id"]) => Promise<T>
   onSetting: <T = any>(id: BlogFolder) => Promise<T>,
+  onAdd: <T = any>(data: Omit<BlogFolder, "id">) => Promise<T>
   onClick: (id: number) => void
 }
 
-function BlogFolderCard(props: FolderCardProps)
-{
+function BlogFolderCard(props: FolderCardProps) {
   const { data, onSetting, onRemove, onClick } = props
   const handleClick = useCallback(() => {
     onClick(data.id)
@@ -41,14 +41,13 @@ function BlogFolderCard(props: FolderCardProps)
         }
       })
     } else {
-    //  ModalFolderEdit.show({
-    //   folderInfo: data,
-    //   onOk: (values: BlogFolder) => {
-    //     return onSetting(values).then(() => {
-    //       message.success("更新成功")
-    //     })
-    //   }
-    //  })
+     ModalFolderEdit.show({
+      folderInfo: data,
+      onOk: (arg) => {
+        const { title, desc_info, id } = arg as BlogFolder
+        return updateFolder({ title, desc_info, id })
+      }
+     })
     }
   }, [])
   return <Card
@@ -102,6 +101,18 @@ export default function FolderManager() {
     })
   }, [])
 
+  const onAddFolder = useCallback(() => {
+    ModalFolderEdit.show({
+      onOk: (value) => {
+        const { title, desc_info } = value as BlogFolder
+        return createFolder({ title, desc_info }).then((v) => {
+          const { title, desc_info, id } = v;
+          dispatch(addOne({ id, title, desc_info }))
+        })
+      }
+    })
+  }, [])
+
   const onUpdate = useCallback<FolderCardProps["onSetting"]>((data) => {
     return updateFolder(data).then(v => {
       dispatch(updateMany([v]))
@@ -113,11 +124,12 @@ export default function FolderManager() {
     // history.push(`/folders/${}`)
     window.open(`/folders/${id}/home`)
   }, [entities])
+ 
   return <div className="blog-folder-manager">
     <div className="folder-manager-title">
       <span className="title">知识库</span>
       <Divider orientation="right">
-        <Button type="primary">添加 + </Button>
+        <Button type="primary" onClick={onAddFolder}>添加 + </Button>
       </Divider>
     </div>
     <div className="folder-card-list-container">

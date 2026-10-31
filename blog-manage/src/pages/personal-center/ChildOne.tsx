@@ -1,28 +1,20 @@
-import React, { useEffect, memo } from "react"
-// class ChildOne extends React.Component {
-//   componentDidMount() {
-//     console.log("ChildOne componentDidMount")
-//   }
-//   render() {
-//     return (
-//       <div>
-//         <h1>Child One</h1>
-//       </div>
-//     )
-//   }
-// }
+import React from "react"
+export default class ChildOne extends React.Component<{ num: number }> {
+  state = {
+    num: 0
+  }
+  UNSAFE_componentWillMount() {
 
-const ChildOne: React.FC<{ num: number }> = memo(({ num }) => {
-  useEffect(() => {
-    console.log("ChildOne useEffect")
-  }, [])
-  console.log("ChildOne render")
-  return (
-    <div>
-
-      <p>Child Number: {num}</p>
-    </div>
-  )
-})
-
-export default ChildOne
+  }
+  getSuber = () => {
+    console.log("getSuber", this.props.num)
+  }
+  render() {
+    return (
+      <div>
+        <h2>ChildOne Component</h2>
+        <p>Received num: {this.props.num}</p>
+      </div>
+    )
+  }
+}

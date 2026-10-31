@@ -34,8 +34,8 @@ export type FolderList = {
 export const createFolder = (folder: CreateFolder) => {
   const { title = '', desc_info = '' } = folder
   return req.post<CreateFolder, AxiosResponse<ResFolder>>('/back-stage/folders', { title, desc_info }).then(v => {
-    const { data: { title, desc_info } } = v
-    return { title, desc_info }
+    const { data: { title, desc_info, id } } = v
+    return { title, desc_info, id }
   })
 }
 

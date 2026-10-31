@@ -4,6 +4,8 @@ export interface SQLBlog extends BlogBody {
   sort_index: number
   create_date: Date
   update_date: Date
+  /** 阅读次数（DB: int unsigned，默认 0；增长逻辑由 client 相关接口维护） */
+  view_times: number
 }
 
 export interface BlogBody { // 博客信息包体
@@ -13,6 +15,7 @@ export interface BlogBody { // 博客信息包体
   folder_id: number
   parent_id: number | null
   path: string,
+  /** 博客背景图 URL（DB: char(255)，可空） */
 }
 
 

@@ -4,16 +4,30 @@ import type { InsertBlog } from "./types/blogManage.js"
 
 const TABLE_NAME = "blog_manage"
 
+/** blog_manage 表业务字段（查询关键字集中维护，新增字段时只需改这里） */
+export const BLOG_FIELDS = [
+  "id",
+  "title",
+  "content",
+  "is_published",
+  "parent_id",
+  "folder_id",
+  "path",
+  "create_date",
+  "update_date",
+  "sort_index",
+] as const
+
 export async function model_getSortIndexByPrevId(parentId: number | null, prevId: number | null): Promise<number> {
   let prevSortIndex = 0
   try {
     if (prevId) {
       const [value] = await model_getBlogByIds(prevId)
       prevSortIndex = (value as SQLBlog).sort_index
-    const sql = 
-    `SELECT title, content, is_published, folder_id, parent_id, path, create_date, update_date, sort_index
-     FROM ${TABLE_NAME} 
-     WHERE parent_id <=> ? AND sort_index > ? 
+    const sql =
+    `SELECT ${BLOG_FIELDS.join(", ")}
+     FROM ${TABLE_NAME}
+     WHERE parent_id <=> ? AND sort_index > ?
      ORDER BY sort_index DESC LIMIT 1`
     const [nextValue] = await sqlPool.query(sql, [parentId, prevSortIndex]);
     console.log( "nextValue:", nextValue)
@@ -31,14 +45,15 @@ export async function model_getSortIndexByPrevId(parentId: number | null, prevId
 async function model_insertBlog(blog: InsertBlog): Promise<SQLBlog> {
   const now = new Date()
   const { title, content = "", is_published = 0, folder_id, parent_id = null, path = "", sort_index } = blog
-  const sql = `INSERT INTO ${TABLE_NAME} 
-  (title, content, is_published, folder_id, parent_id, path, create_date, update_date, sort_index) VALUES 
+  const sql = `INSERT INTO ${TABLE_NAME}
+  (title, content, is_published, folder_id, parent_id, path, create_date, update_date, sort_index ) VALUES
   (?, ?, ?, ?, ?, ?, ?, ?, ?)`
   const params = [title, content, is_published, folder_id, parent_id, path, now, now, sort_index]
   try {
     const value: any = await sqlPool.query(sql, params)
     const id = value[0].insertId
-    return { id, title, content: content!, is_published, parent_id, folder_id, path: path!, create_date: now, update_date: now, sort_index }
+    // view_times 由 DB 默认值 0 初始化，增长逻辑由 client 相关接口维护，这里不写入
+    return { id, title, content: content!, is_published, parent_id, folder_id, path: path!, create_date: now, update_date: now, sort_index , view_times: 0 }
   } catch (e) {
     throw e
   }
@@ -51,7 +66,7 @@ async function model_getBlogByIds(ids: number | number[], keys?: string[]): Prom
   } else {
     params = ids
   }
-  const selectKey = (keys || ["id", "title", "content", "is_published", "parent_id", "folder_id", "create_date", "update_date", "path", "sort_index"]).join(",")
+  const selectKey = (keys || [...BLOG_FIELDS]).join(",")
   const sql = `SELECT ${selectKey} FROM ${TABLE_NAME} WHERE id IN (${params.map(() => "?").join(",")}) AND is_deleted = 0`
 
   try {
@@ -74,7 +89,7 @@ async function model_getPathBlogs(body: { isDeleted?: number; blogId: number }):
   const { isDeleted = 0, blogId } = body
   // 返回 blogId 的所有后代（不含自身）；精确匹配 path 片段，避免 id 子串误匹配（如 1 匹配到 12）
   // 注意：根级节点的 path 为 "/"，自身 id 不出现在 path 中，需要自身时应由调用方显式处理
-  const sql = `SELECT id, title, is_published, parent_id, folder_id, path, create_date, update_date, sort_index FROM ${TABLE_NAME} WHERE is_deleted = ? AND path LIKE ?`
+  const sql = `SELECT ${BLOG_FIELDS.join(", ")} FROM ${TABLE_NAME} WHERE is_deleted = ? AND path LIKE ?`
   const params = [isDeleted, `%/${blogId}%`]
   try {
     const blogs: any = await sqlPool.query(sql, params)
@@ -87,7 +102,7 @@ async function model_getPathBlogs(body: { isDeleted?: number; blogId: number }):
 async function model_getBlogByIDFilter(filter: BlogFilter): Promise<SQLBlog[]> {
   const { blogId, parentId, folderId } = filter
   try {
-    let sql = `SELECT id, title, is_published, parent_id, folder_id, sort_index, create_date, update_date FROM ${TABLE_NAME} WHERE 1=1 AND is_deleted = 0`
+    let sql = `SELECT ${BLOG_FIELDS.join(", ")} FROM ${TABLE_NAME} WHERE 1=1 AND is_deleted = 0`
     const params: any[] = []
     if (blogId !== undefined) {
       sql += " AND id = ?"
@@ -178,13 +193,9 @@ async function model_updateBlog(blog: Partial<SQLBlog> & {id: SQLBlog["id"]} | (
 }
 
 async function model_getParentBlog(ids: number[]): Promise<(SQLBlog | null)[]> {
+  const parentFields = BLOG_FIELDS.map((field) => `parent.${field}`).join(",\n  ")
   const sql = `SELECT
-  parent.id,
-  parent.title,
-  parent.is_published,
-  parent.create_date,
-  parent.update_date,
-  parent.sort_index
+  ${parentFields}
 FROM ${TABLE_NAME} AS child
 LEFT JOIN ${TABLE_NAME} AS parent
   ON child.parent_id = parent.id

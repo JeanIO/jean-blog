@@ -17,10 +17,11 @@ export type CreateReqBody = {
   folder_id: number,
   parent_id: number | null,
   prev_id: number | null,
+  background_url?: string | null,
 }
 
 
-export type BlogItem = Pick<BlogBody, "id" | "title" | "folder_id" | "parent_id" | "is_published" | "create_date" | "update_date" | "sort_index">
+export type BlogItem = Pick<BlogBody, "id" | "title" | "folder_id" | "parent_id" | "is_published" | "create_date" | "update_date" | "sort_index" | "view_times" | "background_url">
 
 export type BlogBody = {
   id: number,
@@ -32,11 +33,15 @@ export type BlogBody = {
   create_date: string,
   update_date: string,
   sort_index: number,
+  /** 阅读次数（后端 int unsigned，由 client 接口维护增长） */
+  view_times: number,
+  /** 博客背景图 URL（后端 char(255)，可空） */
+  background_url: string | null,
 }
 
 export const createBlog = (blog: CreateReqBody): Promise<CreateBlog> => {
-  const { title = '', content = '', folder_id, parent_id, prev_id } = blog
-  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id, prev_id }).then((res) => {
+  const { title = '', content = '', folder_id, parent_id, prev_id, background_url = null } = blog
+  return req.post(`/back-stage/folders/${folder_id}/blogs`, { title, content, parent_id, prev_id, background_url }).then((res) => {
     // 拦截器返回的是 { code, message, data } 信封，解包出 data
     return res.data
   })
