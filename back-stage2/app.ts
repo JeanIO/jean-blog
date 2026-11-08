@@ -4,6 +4,7 @@ import koaStatic from "koa-static"
 import path from "path"
 import getConfig from "./config/index.js"
 import mainRouter from "./routes/index.js"
+import { startViewCountFlushJob } from "./utils/viewCountJob.js"
 
 const config = getConfig()
 
@@ -30,6 +31,9 @@ app.use(mainRouter.routes())
 app.listen(config.server.port, () => {
   console.log(`Server is running on port ${config.server.port}`)
   console.log(`API documentation: http://localhost:${config.server.port}/api/docs`)
+
+  // 启动阅读计数定时回写任务（Redis → MySQL，每 5s）
+  startViewCountFlushJob()
 })
 
 export default app

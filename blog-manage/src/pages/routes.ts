@@ -4,6 +4,7 @@ import { Children, Component } from "react"
 
 // import BlogManage from "./blog-manager"
 const routes = [
+  { path: "/login", component: "./login", layout: false, noMenu: true },
   { path: "/dashboard", label: "看板", component: "./default-page" },
   { path: "/folders", component: "./folder-manager", label: "知识库管理" },
   { path: "/folders/:folderId",

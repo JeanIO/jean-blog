@@ -20,6 +20,11 @@ const router = createRouter({
       component: () => import('@/pages/Blogs/index.vue'),
     },
     {
+      path: '/blogs/:blogId',
+      name: 'blog-detail',
+      component: () => import('@/pages/BlogDetail/index.vue'),
+    },
+    {
       // 未匹配到的路由统一回首页
       path: '/:pathMatch(.*)*',
       redirect: '/',

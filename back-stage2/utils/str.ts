@@ -24,3 +24,31 @@ export function extractNumbersFromSlash(str: string): number[] {
 
   return matches ? matches.map(Number) : []
 }
+
+/**
+ * 从 HTML 内容中提取第一个 <blockquote> 标签内的纯文本作为博客简介。
+ * content 存的是 markdown 渲染后的 HTML；没有 blockquote 时返回空串。
+ * 截取上限与 DB 列宽（varchar(1000)）对齐，留出省略号余量。
+ */
+export function extractBlockquote(html: string, maxLength = 996): string {
+  if (!html) return ""
+  const match = html.match(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/i)
+  if (!match) return ""
+  const text = match[1]
+    // 去掉内部嵌套标签
+    .replace(/<[^>]+>/g, " ")
+    // 常见 HTML 实体还原
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    // 空白折叠
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!text) return ""
+  if (text.length <= maxLength) return text
+  return `${text.slice(0, maxLength).trim()}…`
+}

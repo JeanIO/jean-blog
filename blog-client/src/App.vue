@@ -41,6 +41,8 @@ const navItems = [
   top: 0;
   left: 0;
   right: 0;
+  /* 与全局最小宽度一致，窄窗口下跟随内容区一起横向滚动 */
+  min-width: 768px;
   z-index: 100;
   height: 64px;
   background: rgba(255, 255, 255, 0.85);
@@ -55,7 +57,6 @@ const navItems = [
 }
 
 .navigator-header__inner {
-  max-width: 1080px;
   height: 100%;
   margin: 0 auto;
   padding: 0 24px;
@@ -66,8 +67,13 @@ const navItems = [
 
 .navigator-header__brand {
   font-size: 18px;
-  font-weight: 600;
-  color: var(--color-heading);
+  /* 与首页 hero 同款艺术字体（Snell Roundhand 手写体栈） */
+  font-family:
+    'Snell Roundhand', 'Apple Chancery', 'Segoe Script', 'Brush Script MT', cursive;
+  letter-spacing: 1px;
+  color: var(--color-accent);
+  /* 手写体没有真粗体，用 0.5px 描边把笔画加粗约 1px */
+  -webkit-text-stroke: 0.5px currentColor;
   text-decoration: none;
 }
 

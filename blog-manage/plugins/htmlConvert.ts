@@ -21,5 +21,5 @@ export default (api: IApi) => {
   api.addHTMLLinks(() => ({rel: "stylesheet" ,href: `https://gw.alipayobjects.com/render/p/yuyan_npm/@alipay_lakex-doc/${YUQUE_VERSION}/umd/doc.css` }));
   api.addHTMLHeadScripts(() => ("https://unpkg.com/react@18/umd/react.production.min.js"))
   api.addHTMLHeadScripts(() => ("https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"))
-  api.addHTMLScripts(() => ({ src:`https://gw.alipayobjects.com/render/p/yuyan_npm/@alipay_lakex-doc/${YUQUE_VERSION}/umd/doc.umd.js` }))
+  // api.addHTMLScripts(() => ({ src:`https://gw.alipayobjects.com/render/p/yuyan_npm/@alipay_lakex-doc/${YUQUE_VERSION}/umd/doc.umd.js` }))
 };

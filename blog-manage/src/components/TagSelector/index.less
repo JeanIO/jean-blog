@@ -1,0 +1,74 @@
+.tag-selector {
+  min-width: 220px;
+  max-width: 100%;
+
+  // 已选标签保持单行不换行，超出省略（标题下空间有限）
+  .ant-select-selection-overflow {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  // 浏览模式：只读彩色标签横排
+  &--view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+
+    .ant-tag {
+      margin: 0;
+      font-size: 12px;
+    }
+  }
+}
+
+// 下拉选项：左侧删除按钮 + 色点 + 名称
+.tag-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+
+  .tag-option-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .tag-option-name {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // 「-」删除按钮：默认浅灰，悬停变红
+  .tag-option-delete {
+    flex-shrink: 0;
+    padding: 4px;
+    border-radius: 50%;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.45);
+
+    &:hover {
+      color: #ff4d4f;
+      background: rgba(0, 0, 0, 0.06);
+    }
+  }
+}
+
+// 下拉底部的新建入口
+.tag-selector-create {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: #1890ff;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+// 新建弹窗：Sketch 取色器居中显示
+.tag-create-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}

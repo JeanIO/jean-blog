@@ -7,27 +7,19 @@ import './home.less'
 
 export default function Home() {
   const { folderId } = useParams();
-
   const folderInfo = useAppSelector(state => {
     return state.folder.entities[Number(folderId || '0')] || {}
   })
+  const { title = '' } = folderInfo
   const { entities } = useAppSelector(state => {
     return state.blog
   })
 
-  const { title = '' } = folderInfo
 
   const onTreeNodeClick = useCallback((blogId: string) => {
     history.push(`/folders/${folderId}/${blogId}`)
   }, [folderId])
-  useEffect(() => {
-    getBlogList(227).then(v=> {
 
-    }).catch(e => {
-      console.log("e", e)
-    })
-    
-  }, [])
 
 
   return <div className="home-container">

@@ -5,6 +5,7 @@ import TextAreaAutoResize from "react-textarea-autosize"
 import { message, Spin } from "antd"
 import cossdk from "cos-js-sdk-v5"
 import AutoSaveIndicator, { type AutoSaveStatus } from "@/components/AutoSaveIndicator"
+import yuqueAddress from "./yuque.json"
 import './index.less'
 
 /** 格式化保存时间为 HH:mm:ss */
@@ -22,7 +23,8 @@ type RichTextProps = {
   },
   /** 自动保存方法，由使用方（EditManager）提供，返回 Promise 以便跟踪保存状态 */
   onAutoSave?: (title: string, content: string) => Promise<void> | void,
-  autoSaveDelay?: number
+  autoSaveDelay?: number,
+
 }
 
 interface RichTextRef {
@@ -89,6 +91,20 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
     }
   })
   useEffect(() => {
+   new Promise<void>((res) => {
+    if(!window.Doc) {
+      const script  = document.createElement('script')
+      script.src = yuqueAddress.address
+      script.onload = () => {
+        res()
+      }
+      document.body.appendChild(script)
+    } else{
+      res()
+    }
+   }).then((v) => {
+
+    
     const { title = '', content = '' } = docContent || {}
     setTitle(title)
     titleRef.current = title
@@ -101,6 +117,9 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
       case "view":
         return initViewMode({ title, content });
     }
+   }).catch(e => {
+    console.error("Failed to initialize RichText", e)
+  })
   }, [mode, docContent])
 
   // 添加键盘快捷键监听（Ctrl+S / Command+S 触发自动保存）

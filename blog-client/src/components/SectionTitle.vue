@@ -13,8 +13,6 @@ defineProps<{
       </span>
       {{ title }}
     </h2>
-    <!-- 分割线：占满剩余宽度 -->
-    <span class="section-title__line" aria-hidden="true" />
   </div>
 </template>
 

@@ -197,7 +197,8 @@ export default function BlogIndex() {
       content: "",
       folder_id: Number(folderId),
       parent_id: parentBlogId,
-      prev_id: prevId
+      prev_id: prevId,
+      tag_ids: [],
     }).then((res) => {
       message.success("子博客创建成功")
       // 重新获取博客列表
