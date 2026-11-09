@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react"
+import { createPortal } from "react-dom"
 import { getFileCosKey, getCOSAuth } from "@/requests/service"
 import TextAreaAutoResize from "react-textarea-autosize"
 import { message, Spin } from "antd"
 import cossdk from "cos-js-sdk-v5"
+import AutoSaveIndicator, { type AutoSaveStatus } from "@/components/AutoSaveIndicator"
+import yuqueAddress from "./yuque.json"
 import './index.less'
+
+/** 格式化保存时间为 HH:mm:ss */
+function formatTime(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}
 
 type RichTextProps = {
   mode: "view" | "edit",
@@ -12,8 +21,10 @@ type RichTextProps = {
     title: string,
     content: string
   },
-  onAutoSave?: (title: string, content: string) => void,
-  autoSaveDelay?: number
+  /** 自动保存方法，由使用方（EditManager）提供，返回 Promise 以便跟踪保存状态 */
+  onAutoSave?: (title: string, content: string) => Promise<void> | void,
+  autoSaveDelay?: number,
+
 }
 
 interface RichTextRef {
@@ -62,16 +73,43 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
   const titleAreaRef = useRef<HTMLTextAreaElement>(null)
   const [title, setTitle] = useState<string>('')
   const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const lastContentRef = useRef<string>('')
+  // 上次成功保存的快照（title+content），用于变更去重
+  const lastSavedRef = useRef<string>('')
+  // 最新 title / mode 的镜像，供编辑器回调闭包读取
+  const titleRef = useRef<string>('')
+  const modeRef = useRef<"view" | "edit">(mode)
+  modeRef.current = mode
+  // 自动保存状态（由 RichText 控制 AutoSaveIndicator，完全受控）
+  const [saveStatus, setSaveStatus] = useState<AutoSaveStatus>("idle")
+  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true)
+  // left-space 传送门目标节点
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null)
   useImperativeHandle(ref, () => {
     return {
       getInfo: () => ({ title, content: editorRef.current?.getDocument('text/lake') || '' })
     }
   })
   useEffect(() => {
+   new Promise<void>((res) => {
+    if(!window.Doc) {
+      const script  = document.createElement('script')
+      script.src = yuqueAddress.address
+      script.onload = () => {
+        res()
+      }
+      document.body.appendChild(script)
+    } else{
+      res()
+    }
+   }).then((v) => {
+
+    
     const { title = '', content = '' } = docContent || {}
     setTitle(title)
-    lastContentRef.current = content
+    titleRef.current = title
+    // 初始内容视为已保存快照
+    lastSavedRef.current = JSON.stringify({ title, content })
     switch (mode) {
       case "edit":
         cosInsRef.current = getUploadService()
@@ -79,31 +117,62 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
       case "view":
         return initViewMode({ title, content });
     }
+   }).catch(e => {
+    console.error("Failed to initialize RichText", e)
+  })
   }, [mode, docContent])
 
-  // 添加键盘快捷键监听
+  // 添加键盘快捷键监听（Ctrl+S / Command+S 触发自动保存）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 检查是否是保存快捷键 (Ctrl+S 或 Command+S)
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        // 触发保存操作
-        const content = editorRef.current?.getDocument('text/lake') || '';
-        console.log('保存快捷键触发', { title, content });
-        onAutoSave?.(title, content);
+        runAutoSaveRef.current();
       }
     };
 
     // 监听全局键盘事件
     document.addEventListener('keydown', handleKeyDown);
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [title, onAutoSave])
-  const handleChangeTitle = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setTitle(e.target.value)
   }, [])
+
+  const handleChangeTitle = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setTitle(value)
+    titleRef.current = value
+    // 标题变更同样重置自动保存定时器
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current)
+    }
+    autoSaveTimerRef.current = setTimeout(() => {
+      runAutoSaveRef.current()
+    }, autoSaveDelay)
+  }, [autoSaveDelay])
+
+  /** 执行自动保存：变更去重 → 保存中 → 调用使用方方法 → 记录保存时间 */
+  const runAutoSave = useCallback(async () => {
+    if (!onAutoSave || modeRef.current !== "edit") return
+    const content = editorRef.current?.getDocument('text/lake') || ''
+    const snapshot = JSON.stringify({ title: titleRef.current, content })
+    if (snapshot === lastSavedRef.current) return // 无变更不触发
+    setSaveStatus("saving")
+    try {
+      await onAutoSave(titleRef.current, content)
+      // 成功后更新快照；失败保留旧快照以便重试
+      lastSavedRef.current = snapshot
+      setSavedAt(formatTime(new Date()))
+      setSaveStatus("saved")
+    } catch (e) {
+      setSaveStatus("idle")
+      message.error("自动保存失败")
+    }
+  }, [onAutoSave])
+  // 编辑器回调闭包始终调用最新版本
+  const runAutoSaveRef = useRef(runAutoSave)
+  runAutoSaveRef.current = runAutoSave
 
   const initEditMode = useCallback((value: { title: string, content: string }) => {
     const { createOpenEditor } = window.Doc as any;
@@ -182,30 +251,22 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
     setTimeout(() => {
       editor.setDocument('text/lake', content);
     }, 0);
-    // 监听内容变动
+    // 监听内容变动：重置自动保存定时器，无变更 autoSaveDelay 后触发
     editor.on('contentchange', () => {
       console.info(editor.getDocument('text/lake'));
-      
-      // 重置自动保存定时器
-      if (autoSaveDelay && onAutoSave) {
-        if (autoSaveTimerRef.current) {
-          clearTimeout(autoSaveTimerRef.current);
-        }
-        
-        autoSaveTimerRef.current = setTimeout(() => {
-          const content = editor.getDocument('text/lake') || '';
-          if (content !== lastContentRef.current) {
-            lastContentRef.current = content;
-            console.log('自动保存触发', { title, content });
-            onAutoSave(title, content);
-          }
-        }, autoSaveDelay);
+
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
       }
+
+      autoSaveTimerRef.current = setTimeout(() => {
+        runAutoSaveRef.current()
+      }, autoSaveDelay);
     });
     // @ts-ignore
     window.editor = editor
     editorRef.current = editor
-  }, [autoSaveDelay, onAutoSave])
+  }, [autoSaveDelay])
   
   const initViewMode = useCallback((value: { title: string, content: string }) => {
     const { createOpenViewer } = window.Doc
@@ -235,17 +296,49 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
     viewer.setDocument('text/lake', content)
   }, [])
 
-  return <Spin
-    wrapperClassName="rich-text-spinning"
-    style={{ height: "100%" }}
-    tip="加载中..."
-    spinning={isLoading}>
-    <div className={`rich-text-container ${mode === "view" ? "view-mode" : "edit-mode"}`}>
-      {mode === "view" && <div className="header-wrapper">{title}</div>}
-      <div id="rich-text-dom"/>
-      <div></div>
-    </div>
-  </Spin>
+  // 挂载后查找 left-space 传送门目标节点；卸载时清理定时器
+  useEffect(() => {
+    setPortalTarget(document.getElementById("left-space"))
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current)
+        autoSaveTimerRef.current = null
+      }
+    }
+  }, [])
+
+  return <>
+    {/* 自动保存状态指示器：仅编辑模式下传送门渲染到 layout 的 left-space 节点 */}
+    {portalTarget && mode === "edit" ? createPortal(
+      <AutoSaveIndicator
+        status={saveStatus}
+        savedAt={savedAt}
+        autoSaveEnabled={autoSaveEnabled}
+      />,
+      portalTarget
+    ) : null}
+    <Spin
+      wrapperClassName="rich-text-spinning"
+      style={{ height: "100%" }}
+      tip="加载中..."
+      spinning={isLoading}>
+      <div className={`rich-text-container ${mode === "view" ? "view-mode" : "edit-mode"}`}>
+        {mode === "view" && <div className="header-wrapper">{title}</div>}
+        <div
+          id="rich-text-dom"
+          onBlur={(e) => {
+            // 焦点移出整个编辑器区域时立即触发自动保存
+            if (e.currentTarget.contains(e.relatedTarget as Node)) return
+            if (autoSaveTimerRef.current) {
+              clearTimeout(autoSaveTimerRef.current)
+            }
+            runAutoSaveRef.current()
+          }}
+        />
+        <div></div>
+      </div>
+    </Spin>
+  </>
 })
 
 export default RichText

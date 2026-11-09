@@ -18,6 +18,7 @@ export default defineConfig({
     },
   },
   writeToDisk: true,
-  favicons: ["https://avatars.githubusercontent.com/u/23093076?v=4"]
+  favicons: ["https://avatars.githubusercontent.com/u/23093076?v=4"],
+
 });
 

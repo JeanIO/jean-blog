@@ -1,0 +1,36 @@
+@import './base.css';
+
+/* 主题强调色（可在 base.css 中覆盖） */
+:root {
+  --color-accent: hsla(160, 100%, 37%, 1);
+  --color-accent-soft: hsla(160, 100%, 37%, 0.08);
+  --color-text-soft: rgba(60, 60, 60, 0.55);
+
+  /* 全局交互过渡曲线：所有可交互元素统一使用 */
+  --transition-base: all 0.3s ease-in;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-accent: hsla(160, 80%, 55%, 1);
+    --color-accent-soft: hsla(160, 80%, 55%, 0.12);
+    --color-text-soft: rgba(235, 235, 235, 0.55);
+  }
+}
+
+/* 全局可交互元素统一动画曲线（各组件内通过 var(--transition-base) 复用） */
+a,
+button,
+.interactive {
+  transition: var(--transition-base);
+}
+
+#app {
+  /* 页面布局交给各页面组件控制，这里只铺满视口 */
+  min-height: 100vh;
+}
+
+/* 整个窗口最小宽度 768px：更窄时出现横向滚动条，页面不再被压缩 */
+html {
+  min-width: 768px;
+}

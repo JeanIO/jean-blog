@@ -1,10 +1,3 @@
-
-// #root {
-//   height: 100%;
-// }
-// html {
-//   height: 100%;
-// }
 @import url('./ant-light.css');
 @import url('antd/dist/antd.variable.min.css');
 #root {
@@ -47,6 +40,66 @@
     }
     .ant-layout-sider-trigger {
       left: 0;
+    }
+
+    // Sider 顶部 logo，点击回到看板；复刻 client 首页 Jean's Blog 的描边逐笔绘制动画
+    .logo-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 64px;
+      cursor: pointer;
+      border-bottom: 1px solid #f2f2f2;
+
+      .brand-svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .brand-text {
+        font-family:
+          'Snell Roundhand', 'Apple Chancery', 'Segoe Script', 'Brush Script MT', cursive;
+        font-size: 30px;
+        letter-spacing: 1px;
+        /* 初始只显示描边，fill 透明；画完后渐入渐变填充 */
+        fill: url(#brand-fill);
+        fill-opacity: 0;
+        stroke: #1890ff;
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+        transition:
+          stroke-dashoffset 4s linear,
+          fill-opacity 0.8s ease-in 3.7s;
+      }
+
+      .brand-text--drawn {
+        fill-opacity: 1;
+      }
+
+      // 折叠时只显示首字母 J（隐藏 SVG 而非卸载，避免重复触发描边动画）
+      .logo-j {
+        display: none;
+      }
+
+      &.logo-box--collapsed {
+        .brand-svg {
+          display: none;
+        }
+
+        .logo-j {
+          display: block;
+          font-family:
+            'Snell Roundhand', 'Apple Chancery', 'Segoe Script', 'Brush Script MT', cursive;
+          font-size: 30px;
+          background: linear-gradient(135deg, #40a9ff, #1890ff);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+      }
     }
   }
 }

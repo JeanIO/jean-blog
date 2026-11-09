@@ -3,9 +3,8 @@ import { Outlet, useLocation, useParams, history } from "umi"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { message, Layout, Dropdown, Modal } from "antd"
 import { MenuFoldOutlined, MenuUnfoldOutlined, LoadingOutlined, DownOutlined, BookOutlined } from "@ant-design/icons"
-// import CatalogueTree, { CatalogueTreeProps } from "@/components/CatalogueTree"
 import SiderCatalogueTree, { SiderCatalogueTreeProps } from "@/components/ArboristCatalogueTree"
-import { BlogItem, createBlog, moveBlog, deleteBlog } from "@/requests/blog"
+import { BlogItem, createBlog, moveBlog, deleteBlog, publishBlog } from "@/requests/blog"
 import { BlogFolder, getFolderList } from "@/requests/folder"
 import { getBlogList } from "@/requests/blog"
 import { useAppDispatch, useAppSelector } from "@/store"
@@ -30,16 +29,17 @@ export default function BlogIndex() {
     }
     setCollapsed(!collapsed)
   }, [collapsed])
-
   const { folderId } = useParams();
   const [isFolderLoading, setFolderLoading] = useState(false)
   const [blogLoading, setBlogLoading] = useState<boolean>(false)
   const selectedKeys = useMemo(() => {
     const { pathname } = location
-    if (pathname.endsWith("home")) {
+    // /folders/:folderId/home → 激活首页
+    if (pathname.endsWith("/home")) {
       return ["home"]
     }
-    const match = pathname.match(/\/(\d+)$/)
+    // 仅 /folders/:folderId/:blogId 结构才提取 blogId，避免把 folderId 误判成博客 id
+    const match = pathname.match(/\/folders\/\d+\/(\d+)$/)
     if (match) {
       return [Number(match[1])]
     }
@@ -54,8 +54,17 @@ export default function BlogIndex() {
   })
 
   const onTreeNodeClick = useCallback<NonNullable<SiderCatalogueTreeProps["onTreeNodeClick"]>>((blogId) => {
-    history.push(`/folders/${folderId}/${blogId}`)
-  }, [folderId])
+    const targetPath = `/folders/${folderId}/${blogId}`
+    if (location.pathname === targetPath) return // 已在目标页，避免重复 push 造成历史记录堆积
+    history.push(targetPath)
+  }, [folderId, location.pathname])
+
+  // 稳定引用：避免 CatalogueTree 的 memo 因内联函数/新数组失效
+  const onHomeClick = useCallback<NonNullable<SiderCatalogueTreeProps["onHomeClick"]>>((fid) => {
+    history.push(`/folders/${fid}/home`)
+  }, [])
+
+  const activeKeys = useMemo(() => selectedKeys.map(key => key.toString()), [selectedKeys])
   
   useEffect(() => {
     setFolderLoading(true)
@@ -92,17 +101,15 @@ export default function BlogIndex() {
       cancelText: "取消",
       onOk: () => {
         return moveBlog({ blog_id: dragNode.id, folder_id: Number(folderId), parent_id: parentNode === null ? null : parentNode.id, prev_id: prevId }).then((data) => {
-          console.log("cvv", data)
           const updateData = data.map(item => {
             return {
               id: item.id,
               parent_id: item.parent_id === undefined ?  blogEntities[item.id].parent_id : item.parent_id,
               update_date: item.update_date,
-              is_published: item.is_published || blogEntities[item.id].is_published,
+              is_published: item.is_published ?? blogEntities[item.id].is_published,
               sort_index: item.sort_index
             }
           })
-          console.log("herer", updateData)
           dispatch(updateBlogMany(updateData))
         })
       }
@@ -134,20 +141,75 @@ export default function BlogIndex() {
     })
   }, [folderId, dispatch])
 
+  const onPublishBlog = useCallback<NonNullable<SiderCatalogueTreeProps["onPublishBlog"]>>((blogId, publishStatus) => {
+    const doPublish = (withChildren: number) => {
+      publishBlog(blogId, publishStatus, withChildren).then(() => {
+        message.success(publishStatus === 1 ? "博客发布成功" : "博客已下架")
+        // 重新获取博客列表
+        if(folderId) {
+          getBlogList(Number(folderId)).then(blogs => {
+            dispatch(setBlogAll(blogs))
+          })
+        }
+      }).catch(() => {
+        message.error(publishStatus === 1 ? "博客发布失败" : "博客下架失败")
+      })
+    }
+
+    if (publishStatus === 0) {
+      // 下架确认：将连同所有子博客一起下架（强制级联，不可选择）
+      Modal.confirm({
+        title: "确认是否下架？",
+        content: "下架后该博客及其所有子博客将一并下架",
+        okText: "下架",
+        cancelText: "取消",
+        okType: "danger",
+        onOk: () => doPublish(0),
+      })
+      return
+    }
+
+    // 发布：判断是否存在子博客，决定确认文案与是否连同子博客发布
+    const hasChildren = Object.values(blogEntities).some(item => item.parent_id === blogId)
+    if (!hasChildren) {
+      Modal.confirm({
+        title: "确认是否发布？",
+        okText: "发布",
+        cancelText: "取消",
+        onOk: () => doPublish(0),
+      })
+    } else {
+      Modal.confirm({
+        title: "是否连同子博客一起发布？",
+        content: "该博客存在子博客：确定将连同子博客一起发布；取消则仅发布该博客本身",
+        okText: "连同子博客一起发布",
+        cancelText: "仅发布该博客",
+        onOk: () => doPublish(1),
+        // 取消并不是真的取消：转为独自发布该博客
+        onCancel: () => doPublish(0),
+      })
+    }
+  }, [folderId, dispatch, blogEntities])
+
   const onCreateChildBlog = useCallback<NonNullable<SiderCatalogueTreeProps["onCreateChildBlog"]>>((parentBlogId = null, prevId = null) => {
     createBlog({
-      title: "《未命名博客标题》",
+      title: "未命名博客标题",
       content: "",
       folder_id: Number(folderId),
       parent_id: parentBlogId,
-      prev_id: prevId
-    }).then(() => {
+      prev_id: prevId,
+      tag_ids: [],
+    }).then((res) => {
       message.success("子博客创建成功")
       // 重新获取博客列表
       if(folderId) {
         getBlogList(Number(folderId)).then(blogs => {
           dispatch(setBlogAll(blogs))
         })
+      }
+      // 自动跳转到新创建的博客页面
+      if (res.id !== undefined && folderId !== undefined) {
+        history.push(`/folders/${folderId}/${res.id}`)
       }
     }).catch(() => {
       message.error("子博客创建失败")
@@ -194,13 +256,14 @@ export default function BlogIndex() {
           blogEntities={blogEntities}
           rootId={null}
           folderId={folderId !== undefined ? Number(folderId) : undefined}
-          onHomeClick={(fid) => history.push(`/folders/${fid}/home`)}
+          onHomeClick={onHomeClick}
           onDrag={onDrag}
           onTreeNodeClick={onTreeNodeClick}
           selectedKeys={selectedKeys}
-          activeKeys={selectedKeys.map(key => key.toString())}
+          activeKeys={activeKeys}
           onDeleteBlog={onDeleteBlog}
           onCreateChildBlog={onCreateChildBlog}
+          onPublishBlog={onPublishBlog}
         />
       </div>
     </Sider>

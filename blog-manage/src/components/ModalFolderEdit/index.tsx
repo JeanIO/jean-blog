@@ -1,31 +1,32 @@
 import { Modal, Form, Input } from "antd"
-import enhanceModal, { EnhanceUnifiedModalProps } from "../EnhanceModal"
+import enhanceModal, { EnTargetModalProps } from "../EnhanceModal"
 import { type BlogFolder, updateFolder } from "@/requests/folder"
-import { useState, useCallback, useEffect } from "react"
+import { useCallback, useEffect } from "react"
 
-type ModalFolderEditProps = EnhanceUnifiedModalProps<{
-  folderInfo: BlogFolder
+type ModalFolderEditProps = EnTargetModalProps<{
+  folderInfo?: BlogFolder
 }, BlogFolder>
 
 function ModalFolderEdit(props: ModalFolderEditProps) {
-  const { folderInfo, onCancel, open, onOk } = props
+  const { folderInfo, onClose, open, onOk } = props
   const [form] = Form.useForm()
+
 
   const handleOk = useCallback(() => {
     return form.validateFields().then(values => {
-      const { id } = folderInfo
+      const { id = 0 } = folderInfo || {}
       onOk?.({ title: values.title, desc_info: values.desc, id })
     })
   }, [folderInfo, form, onOk])
 
   useEffect(() => {
-    const { desc_info, title } = folderInfo
+    const { desc_info, title } = folderInfo || {}
     form.setFieldsValue({ title, desc: desc_info })
   }, [folderInfo, form])
 
   return <Modal
     open={open}
-    onCancel={onCancel}
+    onCancel={onClose}
     title="编辑文件夹"
     onOk={handleOk}
   >
@@ -55,4 +56,4 @@ function ModalFolderEdit(props: ModalFolderEditProps) {
     </Form>
   </Modal>
 }
-export default enhanceModal<ModalFolderEditProps, BlogFolder>(ModalFolderEdit)
+export default enhanceModal(ModalFolderEdit)

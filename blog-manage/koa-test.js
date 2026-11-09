@@ -415,3 +415,22 @@ myP1.then(v => {
 // prom.then(v => {
 //   console.log("第三次读取prom的值", v)
 // })
+
+const readline = require('readline');
+// console.log(process.version)
+const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+});
+rl.on('line', function (str) {
+
+    // const tokens = line.split(' ');
+    // console.log(parseInt(tokens[0]) + parseInt(tokens[1]));
+    const arr = str.matchAll(/[A-Z][a-z]*/g)
+    let result = ""
+    arr.forEach(function(item) {
+        result = item[0]
+    })
+    console.log(result)
+    
+});

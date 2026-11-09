@@ -1,0 +1,19 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      // VSCode 图形界面不加载 shell 配置，找不到 nvm 的 node，这里写死绝对路径
+      "runtimeExecutable": "/Users/wangjiarui/.nvm/versions/node/v24.8.0/bin/node",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "program": "/Users/wangjiarui/Desktop/LearnApp/jean-blog/yaogan.js"
+    }
+  ]
+}

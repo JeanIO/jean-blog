@@ -26,5 +26,19 @@ export default function getConfig(): AppConfig {
       secretKey: process.env.SECRET_KEY || "mysecretkey12345",
       jwtExpiresIn: process.env.JWT_EXPIRES_IN || "1h",
     },
+    // 登录账号密码先写死在后台（可用 .env 覆盖）
+    auth: {
+      username: process.env.AUTH_USERNAME || "admin",
+      password: process.env.AUTH_PASSWORD || "admin123",
+    },
+    // session 配置：有效期（毫秒）
+    session: {
+      maxAge: Number(process.env.SESSION_MAX_AGE) || 3600 * 1000,
+    },
+    // redis 配置：阅读计数等实时计数场景（可用 .env 覆盖）
+    redis: {
+      host: process.env.REDIS_HOST || "localhost",
+      port: Number(process.env.REDIS_PORT) || 6379,
+    },
   }
 }

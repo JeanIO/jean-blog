@@ -1,6 +1,12 @@
 .edit-mamager-container {
   width: 100%;
   height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+  .tag-selector--view {
+    padding: 8px;
+  }
   .save-btn-wrapper {
     position: absolute;
     right: 40px;
@@ -13,6 +19,7 @@
 }
 #rich-text-dom {
   height: 100%;
+  flex:1;
 }
 
 #right-space {

@@ -3,6 +3,8 @@ import { BlogBody } from "../../types/models"
 /** 创建博客入参；prev_id 仅用于计算 sort_index，不属于博客本身，可缺省 */
 export interface CreateBlogInput extends BlogBody {
   prev_id: number
+  /** 标签 id 数组：必传，无标签传空数组 []（空数组 = 重置标签） */
+  tag_ids: number[]
 }
 
 /** 更新博客入参（单条，除 id 外均可选）；prev_id 仅在 MOVE 重排序时需要 */

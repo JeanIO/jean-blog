@@ -10,13 +10,34 @@ import {
   model_getParentBlog,
   model_getSortIndexByPrevId,
 } from "../models/blogManage.js"
-import { extractNumbersFromSlash } from "../utils/str.js"
+import { extractNumbersFromSlash, extractBlockquote } from "../utils/str.js"
 import response from "../utils/response.js"
 import type { SQLBlog } from "../types/models.js"
 import type { CreateBlogInput, UpdateBlogInput, BatchUpdateBlogItem } from "./types/blog"
+import * as tagModel from "../models/tag.js"
 
 interface BlogTree extends SQLBlog {
   children: BlogTree[]
+}
+
+/**
+ * 校验 tag_ids 并去重：必须是正整数数组，且每个 id 都要在 blog_tag 里真实存在。
+ * 创建/修改博客时共用，避免把不存在的标签 id 塞进关联表触发外键错误。
+ */
+async function normalizeTagIds(raw: any): Promise<{ valid: boolean; message?: string; ids: number[] }> {
+  const ids: number[] = Array.from(new Set<number>(raw))
+  if (!ids.every((id) => Number.isInteger(id) && id > 0)) {
+    return { valid: false, message: "tag_ids 必须是正整数数组", ids: [] }
+  }
+  if (ids.length === 0) {
+    return { valid: true, ids }
+  }
+  const existing = await tagModel.model_getTagByIds(ids)
+  const missing = ids.filter((id) => !existing.some((tag) => tag.id === id))
+  if (missing.length > 0) {
+    return { valid: false, message: `标签不存在: ${missing.join(", ")}`, ids: [] }
+  }
+  return { valid: true, ids }
 }
 
 async function validateBlogWithParent(childBlog: SQLBlog, parentBlog?: SQLBlog | null): Promise<void> {
@@ -79,7 +100,20 @@ function getUpdatePaths(
 export async function createBlog(ctx: Context, next: Next): Promise<void> {
   const { folderId } = ctx.params
   const body: CreateBlogInput = ctx.request.body as CreateBlogInput
-  const { title, content, is_published = 0, parent_id = null, prev_id = null } = body
+  const { title, content, is_published = 0, parent_id = null, prev_id = null, tag_ids } = body
+
+  // tag_ids 必传，只能是数组；空数组 [] 表示不打标签（setBlogTags 里"只删不插"即重置）
+  if (!Array.isArray(tag_ids)) {
+    response.badRequest(ctx, "tag_ids 必传且必须是数组（无标签传空数组 []）")
+    return
+  }
+  const check = await normalizeTagIds(tag_ids)
+  if (!check.valid) {
+    response.badRequest(ctx, check.message!)
+    return
+  }
+  const tagIds = check.ids
+
   let path = "/"
   if (parent_id !== null || prev_id !== null) {
     let queryArr = []
@@ -116,8 +150,15 @@ export async function createBlog(ctx: Context, next: Next): Promise<void> {
 
   try {
     const sortIndex = await model_getSortIndexByPrevId(parent_id, prev_id)
-    const value = await model_insertBlog({ title, content, is_published, folder_id: Number(folderId), parent_id, path, sort_index: sortIndex })
-    response.success(ctx, value)
+    // 简介：插入时从 content 的 <blockquote> 标签内截取纯文本
+    const descInfo = extractBlockquote(content ?? "")
+    const value = await model_insertBlog({ title, content, is_published, folder_id: Number(folderId), parent_id, path, sort_index: sortIndex, desc_info: descInfo })
+    // 有标签才写关联表（空数组跳过，新博客本来就没有标签）
+    if (tagIds.length > 0) {
+      await tagModel.model_setBlogTags(value.id, tagIds)
+    }
+    // 只回 tag_ids：标签名称/颜色由前端拉全量标签自行关联
+    response.success(ctx, { ...value, tag_ids: tagIds })
     await next()
   } catch (e: any) {
     response.internalError(ctx, "Failed to create blog", e)
@@ -161,13 +202,27 @@ export async function updateBlog(ctx: Context, next: Next): Promise<void> {
   const { action } = body
   try {
     if (action === "CONTENT") {
-      const { title = "无标题博客", content = "" } = body.body || {}
-      await model_updateBlog({ id: Number(blogId), title, content, update_date: new Date() })
+      const { title = "无标题博客", content = "", tag_ids } = body.body || {}
+      // tag_ids 必传：空数组 [] = 清空该博客的全部标签
+      if (!Array.isArray(tag_ids)) {
+        response.badRequest(ctx, "tag_ids 必传且必须是数组（无标签传空数组 []）")
+        return
+      }
+      const check = await normalizeTagIds(tag_ids)
+      if (!check.valid) {
+        response.badRequest(ctx, check.message!)
+        return
+      }
+      // 更新内容时同步重截简介，保证 desc_info 与最新 content 一致
+      const descInfo = extractBlockquote(content)
+      await model_updateBlog({ id: Number(blogId), title, content, update_date: new Date(), desc_info: descInfo })
+      // 替换标签（先删后插，空数组 = 重置）
+      await tagModel.model_setBlogTags(Number(blogId), check.ids)
       const [result] = await model_getBlogByIds(Number(blogId))
-      response.success(ctx, result)
+      // 只回 tag_ids，标签详情由前端拉全量标签自行关联
+      response.success(ctx, { ...result, tag_ids: check.ids })
       await next()
     } else if (action === "MOVE") {
-      // TODO Blog移动文件夹还没有做
       const { folder_id, parent_id = null, prev_id = null } = body.body || {}
       let path = "/"
       let needUnpublish = false
@@ -221,24 +276,40 @@ export async function updateBlog(ctx: Context, next: Next): Promise<void> {
       response.success(ctx, updateData)
       await next()
     } else  {
-      const { publish_status = 0 } = body.body || {}
+      // with_children 0：表示独自发布 1：表示连同子博客一起发布
+      const { publish_status = 0, with_children = 0 } = body.body || {}
+      const now = new Date()
       if (publish_status === 0) {
+        // 下架：自身连同所有子博客一起下架（强制级联，不可选择）
         const children = await model_getPathBlogs({ blogId: Number(blogId) })
-        const publishedChildren = children.filter((item: SQLBlog) => item.is_published === 1)
-        if (publishedChildren.length > 0) {
-          response.badRequest(ctx, "下架发布必须先下架所有子博客")
-          return
-        }
+        console.log("here", children)
+        const updateData: BatchUpdateBlogItem[] = [
+          { id: Number(blogId), is_published: 0, update_date: now },
+          ...children.map((item) => ({ id: item.id, is_published: 0, update_date: now })),
+        ]
+        await model_updateBlog(updateData)
+        response.success(ctx, updateData)
       } else {
+        // 发布：所有父博客必须先发布
         const [parentBlog] = await model_getParentBlog([Number(blogId)])
         if (parentBlog !== null && parentBlog.is_published !== 1) {
           response.badRequest(ctx, "发布博客必须先发布所有父博客")
           return
         }
+        if (with_children === 1) {
+          // 连同子博客一起发布：自身 + 所有后代批量更新
+          const children = await model_getPathBlogs({ blogId: Number(blogId) })
+          const updateData: BatchUpdateBlogItem[] = [
+            { id: Number(blogId), is_published: 1, update_date: now },
+            ...children.map((item) => ({ id: item.id, is_published: 1, update_date: now })),
+          ]
+          await model_updateBlog(updateData)
+          response.success(ctx, updateData)
+        } else {
+          await model_updateBlog({ id: Number(blogId), is_published: 1, update_date: now })
+          response.success(ctx, { id: Number(blogId), publish_status, update_date: now })
+        }
       }
-      const now = new Date()
-      await model_updateBlog({ id: Number(blogId), is_published: publish_status, update_date: now })
-      response.success(ctx, { id: Number(blogId), publish_status, update_date: now })
     }
   } catch (e: any) {
     response.internalError(ctx, "Failed to update blog", e)
@@ -249,7 +320,12 @@ export async function getBlogById(ctx: Context, next: Next): Promise<void> {
   const { blogId } = ctx.params
   try {
     const [blog] = await model_getBlogByIds(Number(blogId))
-    response.success(ctx, blog)
+    // 附带该博客的 tag_ids（编辑页回显）；名称/颜色由前端拉全量标签自行关联
+    let tagIds: number[] = []
+    if (blog) {
+      tagIds = await tagModel.model_getBlogTagIds(blog.id)
+    }
+    response.success(ctx, blog ? { ...blog, tag_ids: tagIds } : blog)
     await next()
   } catch (e: any) {
     response.internalError(ctx, "Failed to get blog", e)
