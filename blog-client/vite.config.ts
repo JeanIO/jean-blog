@@ -24,6 +24,7 @@ export default defineConfig({
     },
   },
   server: {
+    // 监听 IPv4 回环地址,使 /etc/hosts 里指向 127.0.0.1 的域名(如 john-blog.top)也能访问
     proxy: {
       // 本地开发把 /api 代理到后端服务
       '/api': {
