@@ -56,7 +56,7 @@ onMounted(() => {
       </svg>
 
       <p class="home__slogan" :class="{ 'home__slogan--show': drawn }">
-        记录学习、代码与生活的博客
+        我的学习、代码、生活就在这里
       </p>
     </section>
     <!-- 文章列表区域，后续在此扩展 -->
@@ -124,6 +124,7 @@ onMounted(() => {
   color: var(--color-text-soft);
   font-size: 16px;
   opacity: 0;
+  font-weight: 800;
   transform: translateY(6px);
   /* 与艺术字填充渐入（0.8s ease-in 3.7s）对齐：同时开始、同时完成 */
   transition: opacity 0.8s ease-in 3.7s, transform 0.8s ease-in 3.7s;

@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElIcon, ElPopover, ElSlider } from 'element-plus'
 import { Headset } from '@element-plus/icons-vue'
 // 背景视频：import 方式引入，Vite 打包后给出正确的资源 URL（写死字符串路径不会被打包处理）
 import bgVideo from './assets/out.mp4'
+
+const route = useRoute()
+/** 背景视频只在首页展示；切到其他页面时视频卸载（停止下载/播放，省流量） */
+const isHome = computed(() => route.path === '/')
 
 // 顶部导航配置：新增页面时在这里加一项即可
 const navItems = [
@@ -43,8 +48,11 @@ watch(volume, () => {
 </script>
 
 <template>
-  <!-- 固定顶部导航栏 -->
-  <header class="navigator-header">
+  <!-- 固定顶部导航栏：首页降低背景透明度让视频透出来，其他页面保持默认 -->
+  <header
+    class="navigator-header"
+    :class="{ 'navigator-header--transparent': isHome }"
+  >
     <div class="navigator-header__inner">
       <router-link class="navigator-header__brand" to="/">Jean's Blog</router-link>
       <div class="navigator-header__right">
@@ -58,8 +66,8 @@ watch(volume, () => {
             {{ item.label }}
           </router-link>
         </nav>
-        <!-- 声音控制：点击开关声音，悬停弹出音量调节 -->
-        <ElPopover trigger="hover" :width="220" placement="bottom-end">
+        <!-- 声音控制：只在首页展示（视频只有首页有） -->
+        <ElPopover v-if="isHome" trigger="hover" :width="220" placement="bottom-end">
           <template #reference>
             <button
               class="sound-btn"
@@ -87,22 +95,24 @@ watch(volume, () => {
   </header>
 
   <main class="app-main">
-    <!-- 背景视频：铺满整个 main 区域，autoplay 必须 muted 才能被浏览器允许自动播放 -->
-    <video
-      ref="videoRef"
-      class="app-main__video"
-      :src="bgVideo"
-      autoplay
-      muted
-      loop
-      playsinline
-    />
-    <!-- 半透明遮罩：保证浮在视频上的内容可读；声音打开时降低浓度让画面更鲜艳 -->
-    <div
-      class="app-main__overlay"
-      :class="{ 'app-main__overlay--clear': !muted }"
-      aria-hidden="true"
-    />
+    <!-- 背景视频：仅首页渲染，铺满整个 main 区域，autoplay 必须 muted 才能被浏览器允许自动播放 -->
+    <template v-if="isHome">
+      <video
+        ref="videoRef"
+        class="app-main__video"
+        :src="bgVideo"
+        autoplay
+        :muted="muted"
+        loop
+        playsinline
+      />
+      <!-- 半透明遮罩：保证浮在视频上的内容可读；声音打开时降低浓度让画面更鲜艳 -->
+      <div
+        class="app-main__overlay"
+        :class="{ 'app-main__overlay--clear': !muted }"
+        aria-hidden="true"
+      />
+    </template>
     <div class="app-main__content">
       <router-view />
     </div>
@@ -127,6 +137,12 @@ watch(volume, () => {
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--color-border);
+  transition: background 0.3s ease;
+
+  /* 首页：降低背景透明度，让视频透出来 */
+  &--transparent {
+    background: rgba(255, 255, 255, 0.3);
+  }
 }
 
 
@@ -240,7 +256,7 @@ watch(volume, () => {
     inset: 0;
     z-index: 1;
     background: rgba(255, 255, 255, 0.55);
-    transition: background 0.6s ease;
+    transition: background 0.3s ease;
 
     &--clear {
       background: rgba(255, 255, 255, 0.25);
