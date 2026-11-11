@@ -1,4 +1,4 @@
-import { Modal, Form, Input } from "antd"
+import { Modal, Form, Input, message } from "antd"
 import enhanceModal, { EnTargetModalProps } from "../EnhanceModal"
 import { type BlogFolder, updateFolder } from "@/requests/folder"
 import { useCallback, useEffect } from "react"
@@ -15,9 +15,12 @@ function ModalFolderEdit(props: ModalFolderEditProps) {
   const handleOk = useCallback(() => {
     return form.validateFields().then(values => {
       const { id = 0 } = folderInfo || {}
-      onOk?.({ title: values.title, desc_info: values.desc, id })
+      onOk?.({ title: values.title, desc_info: values.desc, id }).then((value) => {
+        message.success(`新增《${values.title}》文件夹成功`)
+        onClose?.()
+      })
     })
-  }, [folderInfo, form, onOk])
+  }, [folderInfo, form, onOk, onClose])
 
   useEffect(() => {
     const { desc_info, title } = folderInfo || {}

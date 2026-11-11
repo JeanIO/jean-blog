@@ -11,9 +11,6 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
-    ElIcon: typeof import('element-plus/es')['ElIcon']
-    ElPopover: typeof import('element-plus/es')['ElPopover']
-    ElSlider: typeof import('element-plus/es')['ElSlider']
     IconClock: typeof import('./src/components/icons/IconClock.vue')['default']
     IconCommunity: typeof import('./src/components/icons/IconCommunity.vue')['default']
     IconDocumentation: typeof import('./src/components/icons/IconDocumentation.vue')['default']
