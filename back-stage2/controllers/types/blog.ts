@@ -1,4 +1,4 @@
-import { BlogBody } from "../../types/models"
+import { BlogBody } from "../../types/models.js"
 
 /** 创建博客入参；prev_id 仅用于计算 sort_index，不属于博客本身，可缺省 */
 export interface CreateBlogInput extends BlogBody {

@@ -36,10 +36,10 @@
     width: 100%;
     display: grid;
     grid-template-columns: repeat(3, minmax(300px, 1fr));
+    /* 行高固定 200px：网格默认 align-content: stretch 会把 auto 行拉伸平分容器高度，
+       文件夹少时卡片会被拉满整页，固定行高后拉伸不再生效 */
+    grid-auto-rows: 200px;
     grid-gap: 18px 8px;
-    .antd-card {
-      height: 200px;
-    }
   }
 }
 
