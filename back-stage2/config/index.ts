@@ -1,10 +1,12 @@
+import path from "path"
 import dotenv from "dotenv"
 import type { AppConfig } from "../types/models.js"
 
 export default function getConfig(): AppConfig {
-  // 默认从 process.cwd() 找 .env：dev 时 cwd 是项目根（nodemon/tsx 启动），
-  // 编译后 node dist/app.js 也从项目根启动（pm2 cwd 指向项目根），两种场景都命中根目录的 .env
-  dotenv.config()
+  // 相对代码文件定位 .env（服务器只部署 dist，不部署源码）：
+  // dev: src/config → ../.env = 项目根/.env
+  // 生产: dist/config → ../.env = dist/.env（由 build 脚本在编译后拷入 dist）
+  dotenv.config({ path: path.resolve(import.meta.dirname!, "../.env") })
 
   return {
     server: {
