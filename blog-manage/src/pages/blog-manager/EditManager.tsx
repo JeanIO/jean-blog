@@ -39,9 +39,14 @@ export default function EditManager() {
     }
     setMode('view')
     getBlogContent(Number(blogId)).then(v => {
-      const { data: { content, title, tag_ids = [] } } = v
-      setDocContent({ content, title })
-      setTagIds(tag_ids)
+      const { data } = v
+      if(!data) {
+        message.error('博客不存在或已删除')
+      } else {
+        const { data: { content, title, tag_ids = [] } } = v
+        setDocContent({ content, title })
+        setTagIds(tag_ids)
+      }
     })
   }, [blogId])
   const onSubmit = useCallback(() => {
