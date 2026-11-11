@@ -134,7 +134,7 @@ export default function FolderManager() {
     </div>
     <div className="folder-card-list-container">
       {loading ? <Spin /> : <div className="folder-card-list-wrapper">
-        {ids.length ? ids.slice(0,1).map(id => {
+        {ids.length ? ids.map(id => {
           return <BlogFolderCard
             key={id}
             data={entities[id]}
