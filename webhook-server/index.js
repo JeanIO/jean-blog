@@ -2,8 +2,35 @@
 const Koa = require('koa');
 const crypto = require('crypto');
 const { exec } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 const app = new Koa();
 const WEBHOOK_SECRETJSON = require('./config.json');
+
+// ===== 执行日志写入 ./pack.log =====
+// 拦截 console.log / console.error,把本进程所有输出(含 deploy.sh 的 stdout/stderr)追加写入
+// pack.log(位于本文件同目录);控制台输出保留,方便前台调试
+const LOG_FILE = path.join(__dirname, 'pack.log');
+const logStream = fs.createWriteStream(LOG_FILE, { flags: 'a' }); // 'a' 追加,启动时想清空改成 'w'
+const origLog = console.log.bind(console);
+const origError = console.error.bind(console);
+
+function writeLog(level, args) {
+  const line =
+    `[${new Date().toISOString()}] [${level}] ` +
+    args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ') +
+    '\n';
+  logStream.write(line);
+}
+
+console.log = (...args) => {
+  writeLog('INFO', args);
+  origLog(...args);
+};
+console.error = (...args) => {
+  writeLog('ERROR', args);
+  origError(...args);
+};
 
 
 const WEBHOOK_SECRET = WEBHOOK_SECRETJSON.webhookSecret;
