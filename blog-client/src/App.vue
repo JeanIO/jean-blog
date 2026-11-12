@@ -95,6 +95,7 @@ watch(volume, () => {
         </ElPopover>
       </div>
     </div>
+    脚本生效了
   </header>
 
   <main class="app-main">
