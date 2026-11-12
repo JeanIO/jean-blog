@@ -98,6 +98,7 @@ watch(volume, () => {
   </header>
 
   
+
   <main class="app-main">
     <!-- 背景视频：仅首页渲染，铺满整个 main 区域，autoplay 必须 muted 才能被浏览器允许自动播放 -->
     <template v-if="isHome">
