@@ -88,7 +88,7 @@ app.use(async ctx => {
   isDeploying = true;
 
   // 调用你写好的sh脚本
-  exec('/home/ubuntu/jean-blog/deploy.sh', (err, stdout, stderr) => {
+  exec('/home/ubuntu/jean-blog/webhook-server/deploy.sh', (err, stdout, stderr) => {
     isDeploying = false;
     if (err) {
       console.error('❌ 部署脚本异常：', err.message, stderr);
