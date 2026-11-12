@@ -24,11 +24,6 @@ jobs:
           npm config list
           npm install
           npm run build
-        env:
-          # 强行替换锁文件里的主机名为官方源
-          npm_config_replace_registry_host: "always"
-          # 允许拉取
-          npm_config_allow_remote: "all"
 
 
       # ================= 打包 blog-manage =================
