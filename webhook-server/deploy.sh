@@ -52,7 +52,7 @@ npm run build
 # 6. 重启后端服务
 echo "🔄 [5/5] 重启后端服务..."
 # 确保 pm2 也在正确的 Node 环境下执行
-pm2 restart jean-blog
+pm2 reload jean-blog
 
 echo "✅ [$(date '+%Y-%m-%d %H:%M:%S')] 部署完成！"
 echo "=================================================="
