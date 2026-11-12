@@ -33,7 +33,6 @@ const toggleMuted = () => {
   const video = videoRef.value
   if (!video) return
   muted.value = !muted.value
-  
   video.muted = muted.value
   if (!muted.value) {
     video.volume = volume.value / 100
