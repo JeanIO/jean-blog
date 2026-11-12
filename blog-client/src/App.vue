@@ -24,6 +24,7 @@ const muted = ref(true)
 /** 音量 0-100 */
 const volume = ref(50)
 
+
 /**
  * 开关声音。关键点：浏览器 autoplay 策略要求"有音频的播放必须由用户手势触发"，
  * 所以这里在 click 处理器内【同步】操作 video 元素——解锁音频不能靠异步 watcher。
