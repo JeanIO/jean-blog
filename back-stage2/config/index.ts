@@ -3,10 +3,14 @@ import dotenv from "dotenv"
 import type { AppConfig } from "../types/models.js"
 
 export default function getConfig(): AppConfig {
-  // 相对代码文件定位 .env（服务器只部署 dist，不部署源码）：
-  // dev: src/config → ../.env = 项目根/.env
-  // 生产: dist/config → ../.env = dist/.env（由 build 脚本在编译后拷入 dist）
-  dotenv.config({ path: path.resolve(import.meta.dirname!, "../.env") })
+  // 相对代码文件定位 .env（.env 统一放在 back-stage2 项目根目录）：
+  // 开发: config/index.ts   → ../.env   = 项目根/.env
+  // 生产: dist/config/index.js → ../../.env = 项目根/.env（dist 在项目根内部，多一层）
+  const envPath =
+    process.env.NODE_ENV === "production"
+      ? path.resolve(import.meta.dirname!, "../../.env")
+      : path.resolve(import.meta.dirname!, "../.env")
+  dotenv.config({ path: envPath })
 
   return {
     server: {
