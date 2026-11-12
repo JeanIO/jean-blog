@@ -33,12 +33,13 @@ const toggleMuted = () => {
   const video = videoRef.value
   if (!video) return
   muted.value = !muted.value
-  
+
   video.muted = muted.value
   if (!muted.value) {
     video.volume = volume.value / 100
     video.play().catch(() => {}) // 确保处于播放中（用户可能手动暂停过）
   }
+  
 }
 
 // 音量滑块变化时同步到 video（音量调整不涉及音频解锁，watcher 即可）
