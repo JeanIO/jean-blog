@@ -30,7 +30,6 @@ const volume = ref(50)
  * 所以这里在 click 处理器内【同步】操作 video 元素——解锁音频不能靠异步 watcher。
  */
 const toggleMuted = () => {
-  
   const video = videoRef.value
   if (!video) return
   muted.value = !muted.value
