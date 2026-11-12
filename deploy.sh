@@ -38,13 +38,14 @@ npm run build
 echo "📦 [3/5] 开始打包 blog-manage (使用 Node 18)..."
 cd ../blog-manage
 nvm use 18
+echo "当前 Node 版本: $(node -v)"
 npm install --registry=https://registry.npmmirror.com
 npm run build
+nvm use default  # 切回默认 Node 版本，避免影响后续操作
 
-# 5. 打包 back-stage2 (切回默认最新版)
+# 5. 打包 back-stage2 
 echo "📦 [4/5] 开始打包 back-stage2 (切回默认 Node)..."
 cd ../back-stage2
-nvm use default
 npm install --registry=https://registry.npmmirror.com
 npm run build
 
