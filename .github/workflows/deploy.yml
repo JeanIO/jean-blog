@@ -20,6 +20,8 @@ jobs:
       - name: 安装依赖并打包 blog-client
         run: |
           cd blog-client
+          echo "====== 当前 npm 配置 ======"
+          npm config list
           npm install
           npm run build
 
