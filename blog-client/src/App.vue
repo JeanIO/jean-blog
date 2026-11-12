@@ -39,7 +39,7 @@ const toggleMuted = () => {
     video.volume = volume.value / 100
     video.play().catch(() => {}) // 确保处于播放中（用户可能手动暂停过）
   }
-  
+
 }
 
 // 音量滑块变化时同步到 video（音量调整不涉及音频解锁，watcher 即可）
@@ -97,6 +97,7 @@ watch(volume, () => {
     </div>
   </header>
 
+  
   <main class="app-main">
     <!-- 背景视频：仅首页渲染，铺满整个 main 区域，autoplay 必须 muted 才能被浏览器允许自动播放 -->
     <template v-if="isHome">
