@@ -230,7 +230,7 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
                     const { Location, Key } = data
                     // res(data);
                     res({
-                      url: `http://${Location}`,
+                      url: `https://${Location}`,
                       size,
                       filename
                       // size: s

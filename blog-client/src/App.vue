@@ -187,7 +187,6 @@ watch(volume, () => {
   position: relative;
   display: inline-flex;
   line-height: 0;
-
   &--muted::after {
     content: '';
     position: absolute;
