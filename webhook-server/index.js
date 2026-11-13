@@ -115,7 +115,9 @@ app.use(async ctx => {
   isDeploying = true;
 
   // 调用你写好的sh脚本
-  exec('/home/ubuntu/jean-blog/webhook-server/deploy.sh', (err, stdout, stderr) => {
+  // 用 bash 显式执行：即使 deploy.sh 丢失可执行位（644）也能正常运行，
+  // 不再依赖文件权限，避免 webhook 因 Permission denied 静默失败
+  exec('bash /home/ubuntu/jean-blog/webhook-server/deploy.sh', (err, stdout, stderr) => {
     isDeploying = false;
     if (err) {
       console.error('❌ 部署脚本异常：', err.message, stderr);
