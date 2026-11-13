@@ -1,7 +1,7 @@
 // deploy-server.js
 const Koa = require('koa');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const app = new Koa();
@@ -32,7 +32,9 @@ console.error = (...args) => {
   origError(...args);
 };
 
+
 const WEBHOOK_SECRET = WEBHOOK_SECRETJSON.webhookSecret;
+
 const PORT = 9000;
 let isDeploying = false; // 部署锁，防止并发冲突
 
@@ -112,37 +114,15 @@ app.use(async ctx => {
   console.log('✅ 开始执行部署脚本');
   isDeploying = true;
 
-  // ========== 这里改成 spawn + /bin/sh 重点 ==========
-  const sh = spawn('/bin/sh', [
-    '/home/ubuntu/jean-blog/webhook-server/deploy.sh'
-  ], {
-    cwd: '/home/ubuntu/jean-blog/webhook-server',
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
-
-  // 实时stdout日志
-  sh.stdout.on('data', (buf) => {
-    console.log('deploy stdout:', buf.toString());
-  });
-  // 实时stderr日志
-  sh.stderr.on('data', (buf) => {
-    console.error('deploy stderr:', buf.toString());
-  });
-
-  sh.on('close', (code) => {
+  // 调用你写好的sh脚本
+  exec('/home/ubuntu/jean-blog/webhook-server/deploy.sh', (err, stdout, stderr) => {
     isDeploying = false;
-    if (code === 0) {
-      console.log('✅ 部署脚本执行成功，退出码：', code);
-    } else {
-      console.error('❌ 部署脚本异常退出，退出码：', code);
+    if (err) {
+      console.error('❌ 部署脚本异常：', err.message, stderr);
+      return;
     }
+    console.log('✅ 部署完成，输出：\n', stdout);
   });
-
-  sh.on('error', (err) => {
-    isDeploying = false;
-    console.error('❌ 无法拉起部署进程：', err.message);
-  });
-  // =================================================
 
   // 立刻返回，不要阻塞，GitHub超时很短
   ctx.body = 'deploy task started';
