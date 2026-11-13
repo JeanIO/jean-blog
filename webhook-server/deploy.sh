@@ -1,6 +1,6 @@
 
 #!/bin/bash
-
+chmod +x "$0"
 # 将所有输出（包括报错）都追加到 webhook.log，方便你随时查看进度
 exec >> /home/ubuntu/webhook.log 2>&1
 
