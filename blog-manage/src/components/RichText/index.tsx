@@ -39,6 +39,7 @@ const getUploadService = () => {
     SecurityToken: sessionToken,
     StartTime: startTime,
     ExpiredTime: expiredTime,
+    
     */
     SliceSize: 3145728,
     getAuthorization: async function (options, callback) {
