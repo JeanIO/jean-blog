@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from "react"
+import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle, memo } from "react"
 import { createPortal } from "react-dom"
 import { getFileCosKey, getCOSAuth } from "@/requests/service"
 import TextAreaAutoResize from "react-textarea-autosize"
@@ -39,7 +39,7 @@ const getUploadService = () => {
     SecurityToken: sessionToken,
     StartTime: startTime,
     ExpiredTime: expiredTime,
-    
+
     */
     SliceSize: 3145728,
     getAuthorization: async function (options, callback) {
@@ -67,7 +67,7 @@ const getUploadService = () => {
   return cos
 }
 
-const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
+const RichText = memo(forwardRef<RichTextRef, RichTextProps>((props, ref) => {
   const { docContent, mode, isLoading = false, onAutoSave, autoSaveDelay = 3000 } = props
   const cosInsRef = useRef<any>(undefined)
   const editorRef = useRef<any>()
@@ -92,6 +92,7 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
     }
   })
   useEffect(() => {
+   console.log("mode", mode)
    new Promise<void>((res) => {
     if(!window.Doc) {
       const script  = document.createElement('script')
@@ -104,8 +105,6 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
       res()
     }
    }).then((v) => {
-
-    
     const { title = '', content = '' } = docContent || {}
     setTitle(title)
     titleRef.current = title
@@ -124,6 +123,7 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
   }, [mode])
 
   useEffect(() => {
+    console.log("docContent", docContent)
     const { title = '未命名文件', content = '' } = docContent || {}
     setTitle(title)
     titleRef.current = title
@@ -134,6 +134,8 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
          * 编辑模式下大纲没有展示出来
          * 执行editor.setDocument的时候要异步一下，可以包在setTimeout回调内。
          */
+        // 自动保存回传的内容与编辑器当前文档一致时跳过 setDocument，避免文档重置导致屏幕滚动
+        if (editorRef.current.getDocument('text/lake') === content) return
         editorRef.current.setDocument('text/lake', content)
       }, 0)
     }
@@ -271,8 +273,6 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
     }, 0);
     // 监听内容变动：重置自动保存定时器，无变更 autoSaveDelay 后触发
     editor.on('contentchange', () => {
-      console.info(editor.getDocument('text/lake'));
-
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
@@ -358,6 +358,6 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
       </div>
     </Spin>
   </>
-})
+}))
 
 export default RichText
