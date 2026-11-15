@@ -227,8 +227,10 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
                   if (err) {
                     rej(err);
                   } else {
-                    const { Location, Key } = data
+                    let { Location, Key } = data
+                    console.log("上传成功，文件地址：", Location, Key)
                     // res(data);
+                    Location = Location.replace(/\S+?(?=\/)/, "assets.john-blog.top")
                     res({
                       url: `https://${Location}`,
                       size,
