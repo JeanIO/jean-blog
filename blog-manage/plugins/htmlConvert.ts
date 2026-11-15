@@ -16,7 +16,7 @@ export default (api: IApi) => {
   //   return memo;
   // }); 
 
-  const YUQUE_VERSION = "1.32.0"
+  const YUQUE_VERSION = "1.67.0"
   api.addHTMLLinks(() => ({ rel: "stylesheet", href: "https://unpkg.com/antd@4.24.13/dist/antd.css" }))
   api.addHTMLLinks(() => ({rel: "stylesheet" ,href: `https://gw.alipayobjects.com/render/p/yuyan_npm/@alipay_lakex-doc/${YUQUE_VERSION}/umd/doc.css` }));
   api.addHTMLHeadScripts(() => ("https://unpkg.com/react@18/umd/react.production.min.js"))
