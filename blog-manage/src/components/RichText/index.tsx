@@ -120,7 +120,24 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
    }).catch(e => {
     console.error("Failed to initialize RichText", e)
   })
-  }, [mode, docContent])
+  }, [mode])
+
+  useEffect(() => {
+    const { title = '未命名文件', content = '' } = docContent || {}
+    setTitle(title)
+    titleRef.current = title
+
+    if(editorRef.current) {
+      setTimeout(() => {
+        /** 语雀官网文档
+         * 编辑模式下大纲没有展示出来
+         * 执行editor.setDocument的时候要异步一下，可以包在setTimeout回调内。
+         */
+        editorRef.current.setDocument('text/lake', content)
+      }, 0)
+    }
+  }, [docContent])
+
 
   // 添加键盘快捷键监听（Ctrl+S / Command+S 触发自动保存）
   useEffect(() => {
@@ -130,10 +147,8 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
         runAutoSaveRef.current();
       }
     };
-
     // 监听全局键盘事件
     document.addEventListener('keydown', handleKeyDown);
-
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
@@ -295,6 +310,7 @@ const RichText = forwardRef<RichTextRef, RichTextProps>((props, ref) => {
         }
       }
     })
+    editorRef.current = viewer
     viewer.setDocument('text/lake', content)
   }, [])
 
