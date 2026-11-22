@@ -38,12 +38,11 @@ export default function EditManager() {
       return
     }
     setMode('view')
-    getBlogContent(Number(blogId)).then(v => {
-      const { data } = v
+    getBlogContent(Number(blogId)).then(data => {
       if(!data) {
         message.error('博客不存在或已删除')
       } else {
-        const { data: { content, title, tag_ids = [] } } = v
+        const  { content, title, tag_ids = [] }  = data
         setDocContent({ content, title })
         setTagIds(tag_ids)
       }

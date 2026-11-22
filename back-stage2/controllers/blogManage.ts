@@ -165,17 +165,6 @@ export async function createBlog(ctx: Context, next: Next): Promise<void> {
   }
 }
 
-export async function deleteBlogById(body: { blogId: number }): Promise<any> {
-  const { blogId } = body
-  try {
-    const value = await model_deleteBlog(blogId)
-    console.log("删除成功", value)
-    return value
-  } catch (e) {
-    throw e
-  }
-}
-
 export async function getBlogByParentId(body: { blogId: number }): Promise<SQLBlog[]> {
   const { blogId } = body
   try {
@@ -282,7 +271,6 @@ export async function updateBlog(ctx: Context, next: Next): Promise<void> {
       if (publish_status === 0) {
         // 下架：自身连同所有子博客一起下架（强制级联，不可选择）
         const children = await model_getPathBlogs({ blogId: Number(blogId) })
-        console.log("here", children)
         const updateData: BatchUpdateBlogItem[] = [
           { id: Number(blogId), is_published: 0, update_date: now },
           ...children.map((item) => ({ id: item.id, is_published: 0, update_date: now })),
@@ -340,5 +328,39 @@ export async function getBlogsByFolderId(ctx: Context, next: Next): Promise<void
     await next()
   } catch (e: any) {
     response.internalError(ctx, "Failed to get blogs by folder id", e)
+  }
+}
+
+/**
+ * 获取该博客下所有的子博客（全部后代，不含自身）：
+ * 根据 path 模糊查询，返回 path 中包含 `/{blogId}` 片段的所有博客
+ */
+export async function getChildBlogs(blogId: number): Promise<SQLBlog[]> {
+  try {
+    return await model_getPathBlogs({ blogId })
+  } catch (e) {
+    throw e
+  }
+}
+
+/**
+ * 删除博客（软删除）：连同该博客下所有子博客一起删除
+ */
+export async function deleteBlog(ctx: Context, next: Next): Promise<void> {
+  const { blogId } = ctx.params
+  try {
+    const [blog] = await model_getBlogByIds(Number(blogId))
+    if (!blog) {
+      response.badRequest(ctx, "博客不存在，删除失败")
+      return
+    }
+    // 先按 path 模糊查询出全部子博客，再连同自身一起批量软删除
+    const children = await getChildBlogs(Number(blogId))
+    const deletedIds = [Number(blogId), ...children.map((item) => item.id)]
+    await model_deleteBlog(deletedIds)
+    response.success(ctx, { deletedIds })
+    await next()
+  } catch (e: any) {
+    response.internalError(ctx, "Failed to delete blog", e)
   }
 }

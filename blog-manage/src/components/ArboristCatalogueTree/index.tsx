@@ -183,17 +183,26 @@ const CatalogueTree = memo((props: SiderCatalogueTreeProps) => {
         {
           key: "ADD_CHILD",
           label: "创建子博客",
-          onClick: () => onMenuSelect(Number(blog.id), "ADD_CHILD"),
+          onClick: ({key, domEvent}) => {
+            domEvent.stopPropagation() // 阻止冒泡，避免触发节点选中
+            onMenuSelect(Number(blog.id), key)
+          },
         },
         {
           key: "DELETE",
           label: "删除博客",
-          onClick: () => onMenuSelect(Number(blog.id), "DELETE"),
+            onClick: ({ key, domEvent }) =>  {
+              domEvent.stopPropagation() // 阻止冒泡，避免触发节点选中
+              onMenuSelect(Number(blog.id), key)
+            },
         },
         {
           key: "PUBLISH",
           label: blog.is_published === 1 ? "下架" : "发布",
-          onClick: () => onMenuSelect(Number(blog.id), "PUBLISH"),
+          onClick: ({key, domEvent}) => {
+            domEvent.stopPropagation() // 阻止冒泡，避免触发节点选中
+            onMenuSelect(Number(blog.id), key)
+          },
         },
       ]
 

@@ -95,7 +95,9 @@ async function model_getBlogByIds(ids: number | number[], filter?: Partial<SQLBl
 
 async function model_getPathBlogs(body: { isDeleted?: number; isPublished?: number; blogId: number }): Promise<SQLBlog[]> {
   const { isDeleted = 0, isPublished, blogId } = body
-  // 返回 blogId 的所有后代（不含自身）；精确匹配 path 片段，避免 id 子串误匹配（如 1 匹配到 12）
+  // 返回 blogId 的所有后代（不含自身）；按 path 片段精确匹配，避免 id 子串误匹配（如 1 误匹配到 /12）
+  // 后代博客的 path 形如 "/{blogId}"（直接子博客）或 "/{blogId}/…"（更深层后代），
+  // 因此用两种模式匹配：以 "/{blogId}" 结尾，或中间包含 "/{blogId}/"
   // 注意：根级节点的 path 为 "/"，自身 id 不出现在 path 中，需要自身时应由调用方显式处理
   let sql = `SELECT ${BLOG_FIELDS.join(", ")} FROM ${TABLE_NAME} WHERE is_deleted = ?`
   const params: any[] = [isDeleted]
@@ -103,8 +105,8 @@ async function model_getPathBlogs(body: { isDeleted?: number; isPublished?: numb
     sql += " AND is_published = ?"
     params.push(isPublished)
   }
-  sql += " AND path LIKE ? ORDER BY sort_index ASC"
-  params.push(`%/${blogId}%`)
+  sql += " AND (path LIKE ? OR path LIKE ?) ORDER BY sort_index ASC"
+  params.push(`%/${blogId}`, `%/${blogId}/%`)
   try {
     const blogs: any = await sqlPool.query(sql, params)
     return (blogs[0] || []) as SQLBlog[]
@@ -112,6 +114,7 @@ async function model_getPathBlogs(body: { isDeleted?: number; isPublished?: numb
     throw e
   }
 }
+
 
 async function model_getBlogByIDFilter(filter: BlogFilter): Promise<SQLBlog[]> {
   const { blogId, parentId, folderId } = filter
@@ -156,10 +159,11 @@ async function model_getBlogsFilter(filter: BlogFilter): Promise<any> {
   return sqlPool.query(sql, params)
 }
 
-async function model_deleteBlog(id: number): Promise<any> {
-  const sql = `UPDATE ${TABLE_NAME} SET is_deleted = 1 WHERE id = ?`
-  const params = [id]
-  return sqlPool.query(sql, params)
+/** 软删除博客：ids 传入 id 数组，用 IN 批量删除，统一置 is_deleted = 1 */
+async function model_deleteBlog(ids: number[]): Promise<any> {
+  if (ids.length === 0) return null
+  const sql = `UPDATE ${TABLE_NAME} SET is_deleted = 1 WHERE id IN (${ids.map(() => "?").join(",")})`
+  return sqlPool.query(sql, ids)
 }
 
 async function model_updateBlog(blog: Partial<SQLBlog> & {id: SQLBlog["id"]} | (Partial<SQLBlog> & {id: SQLBlog["id"]})[]): Promise<any> {

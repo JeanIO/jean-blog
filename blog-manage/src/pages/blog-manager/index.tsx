@@ -9,7 +9,7 @@ import { BlogFolder, getFolderList } from "@/requests/folder"
 import { getBlogList } from "@/requests/blog"
 import { useAppDispatch, useAppSelector } from "@/store"
 import { setAll } from "@/store/folder"
-import { setAll as setBlogAll, updateMany as updateBlogMany } from "@/store/blog"
+import { setAll as setBlogAll, updateMany as updateBlogMany, removeMany as removeBlogMany } from "@/store/blog"
 
 const { Header, Content, Sider } = Layout
 import "./index.less"
@@ -124,22 +124,16 @@ export default function BlogIndex() {
       cancelText: "取消",
       okType: "danger",
       onOk: () => {
-        return deleteBlog(blogId).then(() => {
-          // 从store中移除删除的博客
-          // 注意：这里需要根据实际的store实现来更新状态
+        return deleteBlog(blogId).then(({ deletedIds }) => {
+          // 后端返回实际删除的 id 列表（含全部子博客），从 store 中移除所有匹配的博客
+          dispatch(removeBlogMany(deletedIds))
           message.success("博客删除成功")
-          // 重新获取博客列表
-          if(folderId) {
-            getBlogList(Number(folderId)).then(blogs => {
-              dispatch(setBlogAll(blogs))
-            })
-          }
         }).catch(() => {
           message.error("博客删除失败")
         })
       }
     })
-  }, [folderId, dispatch])
+  }, [dispatch])
 
   const onPublishBlog = useCallback<NonNullable<SiderCatalogueTreeProps["onPublishBlog"]>>((blogId, publishStatus) => {
     const doPublish = (withChildren: number) => {

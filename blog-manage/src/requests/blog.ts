@@ -51,8 +51,16 @@ export const createBlog = (blog: CreateReqBody): Promise<CreateBlog> => {
   })
 }
 
+export type DeleteBlogResult = {
+  /** 实际被删除的博客 id 列表（后端级联删除：含自身和全部子博客） */
+  deletedIds: number[]
+}
+
 export const deleteBlog = (blogId: BlogItem["id"]) => {
-  return req.delete(`/back-stage/blogs/${blogId}`)
+  return req.delete(`/back-stage/blogs/${blogId}`).then((res) => {
+    // 拦截器返回的是 { code, message, data } 信封，解包出 data（{ deletedIds }）
+    return res.data as DeleteBlogResult
+  })
 }
 
 export const saveBlog = (blog: Pick<BlogBody, "id" | "title" | "content"> & { tag_ids?: number[] }) => {
@@ -73,7 +81,7 @@ export const getBlogList = (folder_id: BlogItem["folder_id"]) => {
 
 export const getBlogContent = (blog_id: BlogItem["id"]) => {
   return req.get<BlogBody, ApiResponse<BlogBody>>(`/back-stage/blogs/${blog_id}`).then(res => {
-    return res
+    return res.data
   })
 }
 
